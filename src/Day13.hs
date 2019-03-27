@@ -2,21 +2,21 @@
 {-# LANGUAGE TupleSections #-}
 module Day13 where
 
-import Prelude hiding (Either(Left,Right))
-import Text.Parsec (parse,many,many1,optional,(<|>))
-import Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import Text.Parsec.Combinator (between,sepBy)
-import Text.ParserCombinators.Parsec.Number (int)
-import qualified Data.Vector as V
-import Data.Vector (Vector)
+import           Control.Arrow ((&&&))
+import           Data.Bifunctor (second)
+import           Data.Function (on)
+import           Data.List (sort,nub,cycle,iterate',(\\),sortBy,nubBy,groupBy)
 import qualified Data.Matrix as M
-import Data.Matrix (Matrix, (!))
-import Data.List (sort,nub,cycle,iterate',(\\),sortBy,nubBy,groupBy)
-import Control.Arrow ((&&&))
-import Data.Maybe (isJust,fromJust,isNothing,listToMaybe)
-import Data.Bifunctor (second)
-import Data.Tuple (swap)
-import Data.Function (on)
+import           Data.Matrix (Matrix, (!))
+import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe)
+import           Data.Tuple (swap)
+import qualified Data.Vector as V
+import           Data.Vector (Vector)
+import           Prelude hiding (Either(Left,Right))
+import           Text.Parsec (parse,many,many1,optional,(<|>))
+import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
+import           Text.Parsec.Combinator (between,sepBy)
+import           Text.ParserCombinators.Parsec.Number (int)
 
 input = lines <$> readFile "input/input13.txt"
 

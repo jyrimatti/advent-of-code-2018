@@ -1,29 +1,27 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE TupleSections         #-}
-module Day19 where    
+module Day19 where
 import           Control.Arrow ((&&&), second)
-import Prelude hiding ((!!))
+import           Data.Bifunctor (bimap)
 import           Data.Bits ((.&.), (.|.))
 import           Data.Function (on)
-import Data.List (nub, nubBy, sortOn)
+import           Data.List (nub, nubBy, sortOn, iterate')
 import           Data.List.Split (chunksOf)
-import           Data.List(iterate')
-import           Data.Maybe (fromJust)
+import           Data.Maybe
+       (fromJust, isJust, isNothing, listToMaybe, maybeToList, catMaybes,
+        fromMaybe, mapMaybe)
 import           Data.Ord (comparing)
 import qualified Data.Sequence as S
-import qualified Data.Vector.Unboxed as V
-import Data.Bifunctor (bimap)
-import Numeric.Natural
 import           Data.Sequence (Seq)
+import qualified Data.Vector.Unboxed as V
 import           Data.Vector.Unboxed (Vector)
+import           Numeric.Natural
+import           Prelude hiding ((!!))
 import           Text.Parsec (parse,many,many1,optional,(<|>))
 import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
 import           Text.Parsec.Combinator (between,sepBy)
 import           Text.ParserCombinators.Parsec.Number (int,nat)
-import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe,maybeToList,catMaybes,fromMaybe,mapMaybe)
 
 
 input = lines <$> readFile  "input/input19.txt"
@@ -60,11 +58,11 @@ type Register = Int
 data Input = Reg Natural | Val Int
 
 data Opcode = AddR | AddI |
-              MulR | MulI | 
-              BanR | BanI | 
-              BorR | BorI | 
-              SetR | SetI | 
-              GtIR | GtRI | GtRR | 
+              MulR | MulI |
+              BanR | BanI |
+              BorR | BorI |
+              SetR | SetI |
+              GtIR | GtRI | GtRR |
               EqIR | EqRI | EqRR
     deriving (Show,Eq,Ord)
 

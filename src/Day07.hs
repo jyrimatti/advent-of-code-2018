@@ -2,58 +2,76 @@
 {-# LANGUAGE TupleSections    #-}
 module Day07 where
 
-import Data.Maybe (fromJust,isNothing,isJust,fromMaybe)
-import Data.List (nub, delete, sort)
-import Text.Parsec (parse,many,many1,optional)
-import Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import Text.Parsec.Combinator (between,sepBy)
-import Text.ParserCombinators.Parsec.Number (int)
 import Control.Arrow ((&&&))
+import Data.List (find, nub, delete, sort, iterate')
+import Data.Maybe (fromJust,isNothing,isJust,fromMaybe)
+import Data.Tuple.Extra (fst3, snd3, thd3)
 import Numeric.Natural
+import Text.Megaparsec (Parsec,parse,optional,(<|>),try,many)
+import Text.Megaparsec.Char (char,space,string,anyChar,letterChar,notChar)
+import Text.Megaparsec.Char.Lexer (decimal,signed)
 
 input = lines <$> readFile "input/input07.txt"
 
-stepP = (\a b -> (a,b,Nothing)) <$> (string "Step " *> anyChar) <*> (string " must be finished before step " *> anyChar <* string " can begin.")
+type Parser = Parsec () String
 
+type Rule = (Char, Char, Maybe Int)
+
+stepP :: Parser Rule
+stepP = (,,Nothing) <$> (string "Step " *> anyChar) <*> (string " must be finished before step " *> anyChar <* string " can begin.")
+
+step :: String -> Rule
 step = either undefined id . parse stepP ""
 
-_1 (x,_,_) = x
-_2 (_,x,_) = x
-_3 (_,_,x) = x
-
+deleteAll :: String -> String -> String
 deleteAll toRemove = filter (`notElem` toRemove)
 
-nextToSolve :: [(Char,Char,Maybe Int)] -> String
-nextToSolve = nub . (\(xs,ys) -> (_1 <$> filter (isJust . _3) xs) <> sort ys) . (id &&& uncurry deleteAll . (fmap _2 &&& fmap _1))
+nextToSolve :: [Rule] -> String
+nextToSolve = nub . ((\xs -> ((fst3 <$> filter (isJust . thd3) xs) <>) . sort) <$> id <*> (deleteAll <$> fmap snd3 <*> fmap fst3))
 
 delay :: Char -> Int
 delay c = snd $ head $ filter ((== c) . fst) $ zip ['A'..'Z'] [60..] 
 
-isComplete (_,_,Just 0) = True
-isComplete (_,_,_)      = False
+isComplete :: Rule -> Bool
+isComplete = ((&&) <$> isJust <*> (== 0) . fromJust) . thd3
 
-underWork workers xs a = a `elem` take workers (nextToSolve xs)
+currentlyWorking :: Int -> [Rule] -> String
+currentlyWorking workers = take workers . nextToSolve
 
-performWork True  a = Just . maybe (delay a) (\a -> a-1)
-performWork False _ = id
+underWork :: Int -> Char -> [Rule] -> Bool
+underWork workers a = (a `elem`) . currentlyWorking workers
 
-remaining workers = (\xs -> fmap (\(a,b,time) -> (a,b,performWork (underWork workers xs a) a time)) xs) . filter (not . isComplete)
+performWork :: String -> Char -> Maybe Int -> Maybe Int
+performWork cur a | a `elem` cur = Just . maybe (delay a) (\a -> a - 1)
+performWork _   _                = id
 
-complete completed = (completed <>) . nub . fmap _1 . filter isComplete
+remaining :: Int -> [Rule] -> [Rule]
+remaining workers = ((\f -> fmap (\(a,b,time) -> (a,b,f a time))) <$> performWork . currentlyWorking workers <*> id) . filter (not . isComplete)
 
-removeFrom workers delay (completed,[(a,b,Just 0)]) = (completed <> [a,b]   , [])
-removeFrom workers delay (completed, xs           ) = (complete completed xs, remaining workers xs)
+complete :: String -> [(Char, Char, Maybe Int)] -> String
+complete completed = (completed <>) . nub . fmap fst3 . filter isComplete
 
-solve1 = fst . head . dropWhile (not . null . snd) . iterate (removeFrom 1 $ const 0) . ([],) . fmap step
+removeFrom :: Int -> (String, [Rule]) -> (String, [Rule])
+removeFrom workers (completed,[(a,b,Just 0)]) = (completed <> [a,b]   , [])
+removeFrom workers (completed, xs           ) = (complete completed xs, remaining workers xs)
+
+act :: Int -> [Rule] -> [(String, [Rule])]
+act workers = iterate' (removeFrom workers) . ([],)
+
+solve1 :: Int -> [String] -> String
+solve1 workers = fst . fromJust . find (null . snd) . act workers . fmap step
 
 -- In what order should the steps in your instructions be completed?
-solution1 = solve1 <$> input
+solution1 = solve1 1 <$> input
 -- CFMNLOAHRKPTWBJSYZVGUQXIDE
 
-finalElement = fmap (,'_',Nothing) . nub . uncurry deleteAll . (fmap _1 &&& fmap _2)
 
-solve2 workers f = length . tail . takeWhile (not . null . snd) . iterate (removeFrom 5 delay) . (\xs -> ([],xs <> finalElement xs)) . fmap step
+finalElement :: [Rule] -> [Rule]
+finalElement = fmap (,'_',Nothing) . nub . (deleteAll <$> fmap fst3 <*> fmap snd3)
+
+solve2 :: Int -> [String] -> Int
+solve2 workers = length . tail . takeWhile (not . null . snd) . act workers . ((<>) <$> id <*> finalElement) . fmap step
 
 -- how long will it take to complete all of the steps?
-solution2 = solve2 5 delay <$> input
+solution2 = solve2 5 <$> input
 -- 971

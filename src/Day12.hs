@@ -1,17 +1,17 @@
 module Day12 where
 
-import Text.Parsec (parse,many,many1,optional,(<|>))
-import Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import Text.Parsec.Combinator (between,sepBy)
-import Text.ParserCombinators.Parsec.Number (int)
-import Control.Arrow ((&&&))
-import Data.Maybe (fromMaybe,fromJust)
-import Data.Sequence (Seq,Seq((:<|),(:|>)),(|>),(<|))
-import Data.List (iterate')
-import Data.Tuple.Extra (both)
-import Data.Foldable (toList)
+import           Control.Arrow ((&&&))
+import           Data.Foldable (toList)
+import           Data.List (iterate')
 import qualified Data.Map.Strict as M
+import           Data.Maybe (fromMaybe,fromJust)
 import qualified Data.Sequence as S
+import           Data.Sequence (Seq,Seq((:<|),(:|>)),(|>),(<|))
+import           Data.Tuple.Extra (both)
+import           Text.Parsec (parse,many,many1,optional,(<|>))
+import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
+import           Text.Parsec.Combinator (between,sepBy)
+import           Text.ParserCombinators.Parsec.Number (int)
 
 input = lines <$> readFile "input/input12.txt"
 

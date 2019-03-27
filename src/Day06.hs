@@ -1,52 +1,67 @@
 module Day06 where
 
-import Data.List (minimumBy,maximumBy,sort,group,nub,find,null)
-import Data.Function (on)
-import Data.Bifunctor (bimap)
 import Control.Arrow ((&&&))
-import Text.Parsec (parse,many,many1,optional)
-import Text.Parsec.Char (char,space,string,letter,digit)
-import Text.Parsec.Combinator (between,sepBy)
-import Text.ParserCombinators.Parsec.Number (int)
+import Data.Bifunctor (bimap)
+import Data.Function (on)
+import Data.List (minimumBy,maximumBy,sort,group,nub,find,null)
+import Data.List.Extra (minimumOn)
 import Data.Tuple.Extra (first,second,both)
+import Text.Megaparsec (Parsec,parse,optional,(<|>),try,many)
+import Text.Megaparsec.Char (char,space,string,anyChar,letterChar,notChar)
+import Text.Megaparsec.Char.Lexer (decimal,signed)
 
 input = lines <$> readFile "input/input06.txt"
 
-coordinateP = (,) <$> (int <* string ", ") <*> int
+type Parser = Parsec () String
 
+type Coordinate = (Int,Int)
+
+coordinateP :: Parser Coordinate
+coordinateP = (,) <$> (decimal <* string ", ") <*> decimal
+
+coordinate :: String -> Coordinate
 coordinate = either undefined id . parse coordinateP ""
 
-distance (x1,y1) (x2,y2) = abs (x1-x2) + abs (y1-y2)
+manhattan :: Coordinate -> Coordinate -> Int
+manhattan (x1,y1) (x2,y2) = abs (x1-x2) + abs (y1-y2)
 
-relevantWorld cs = ((minimum $ fmap fst cs, minimum $ fmap snd cs),(maximum $ fmap fst cs, maximum $ fmap snd cs))
+relevantWorld :: [Coordinate] -> (Coordinate, Coordinate)
+relevantWorld = (minimum . fmap fst &&& minimum . fmap snd) &&& (maximum . fmap fst &&& maximum . fmap snd)
 
-allRelevantCoordinates ((x1,y1),(x2,y2)) = [(x,y,x==x1||x==x2||y==y1||y==y2)|x <- [x1..x2], y <- [y1..y2]]
+allRelevantCoordinates :: (Coordinate, Coordinate) -> [(Coordinate, Bool)]
+allRelevantCoordinates ((x1,y1),(x2,y2)) = [((x,y),x==x1||x==x2||y==y1||y==y2) | x <- [x1..x2], y <- [y1..y2]]
 
-pairwiseDistancesTo coords = fmap (\(w1,w2,isBordering) -> (fmap (distance (w1,w2)) coords, isBordering))
+pairwiseDistancesTo :: [Coordinate] -> [(Coordinate, Bool)] -> [([Int], Bool)]
+pairwiseDistancesTo coords = fmap (first $ (`fmap` coords) . manhattan)
 
-hasDuplicateMinimums = not . null . concatMap nub . find ((> 1) . length) . take 1 . group . sort
-
+removeElements :: [Int] -> [(Int, Bool)] -> [(Int, Bool)]
 removeElements xs = filter ((`notElem` xs) . fst)
 
-havingExactMinimum = not . hasDuplicateMinimums . fst
+havingExactMinimum :: ([Int], Bool) -> Bool
+havingExactMinimum = all ((== 1) . length) . take 1 . group . sort . fst
 
-indexOfMinimum = fst . minimumBy (compare `on` snd) . zip [0..]
+indexOfMinimum :: [Int] -> Int
+indexOfMinimum = fst . minimumOn snd . zip [0..]
 
-gatherInfinite = nub . fmap fst . filter snd
+gatherInfinite :: [(Int, Bool)] -> [Int]
+gatherInfinite = fmap fst . filter snd
 
-mostFrequentValue = maximum . fmap length . group . sort
+largestArea :: [(Int, Bool)] -> Int
+largestArea = maximum . fmap length . group . sort . fmap fst
 
-spread f arg1 arg2 = uncurry f . (arg1 &&& arg2)
+distances :: [String] -> [([Int], Bool)]
+distances = (pairwiseDistancesTo <$> id <*> allRelevantCoordinates . relevantWorld) . fmap coordinate
 
-distances = spread pairwiseDistancesTo id (allRelevantCoordinates . relevantWorld) . fmap coordinate
-
-solve1 = mostFrequentValue . spread removeElements gatherInfinite id . fmap (first indexOfMinimum) . filter havingExactMinimum . distances
-
-solve2 = length . filter (<10000) . fmap (sum . fst) . distances
+solve1 :: [String] -> Int
+solve1 = largestArea . (removeElements <$> gatherInfinite <*> id) . fmap (first indexOfMinimum) . filter havingExactMinimum . distances
 
 -- What is the size of the largest area that isn't infinite?
 solution1 = solve1 <$> input
 -- 5035
+
+
+solve2 :: [String] -> Int
+solve2 = length . filter (<10000) . fmap (sum . fst) . distances
 
 -- What is the size of the region containing all locations which have a total distance to all given coordinates of less than 10000?
 solution2 = solve2 <$> input

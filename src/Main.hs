@@ -1,6 +1,6 @@
 module Main where
 
-import Data.Time (getCurrentTime)
+import           Data.Time (getCurrentTime)
 
 import qualified Day01
 import qualified Day02

@@ -3,6 +3,7 @@ module Day25 where
 import           Algorithm.Search (bfs)
 import           Control.Arrow ((&&&))
 import           Control.Monad ((>=>))
+import           Control.Monad.Combinators (between,sepBy,manyTill)
 import           Data.Bifunctor (second,first,bimap)
 import           Data.Foldable (foldl', maximumBy, toList)
 import           Data.Function (on)
@@ -18,12 +19,11 @@ import           Data.Tuple (swap)
 import           Data.Tuple.Extra (swap,both)
 import qualified Data.Vector as V
 import           Data.Vector (Vector)
+import           Debug.Trace
 import           Prelude hiding (Either(Left,Right),round)
 import           Text.Megaparsec (Parsec,parse,optional,(<|>),try,many)
 import           Text.Megaparsec.Char (char,space,string,anyChar,letterChar)
 import           Text.Megaparsec.Char.Lexer (decimal,signed)
-import Debug.Trace
-import Control.Monad.Combinators (between,sepBy,manyTill)
 
 inputLines = fmap lines . readFile 
 

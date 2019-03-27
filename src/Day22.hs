@@ -1,10 +1,9 @@
-{-# LANGUAGE TupleSections #-}
 module Day22 where
 
+import Algorithm.Search (dijkstra)
 import Data.Maybe (fromJust)
-import Prelude hiding (replicate,(!!),length,head,take)
 import Data.Sequence hiding (filter,zip)
-import           Algorithm.Search (dijkstra)
+import Prelude hiding (replicate,(!!),length,head,take)
 
 depth = 6084
 target = (14,709)

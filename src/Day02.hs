@@ -1,32 +1,36 @@
 module Day02 where
 
-import Data.Tuple.Extra (both)
+import Control.Arrow ((&&&))
 import Data.Foldable (foldMap)
-import Data.Monoid
-import Data.List (sort,group,nub,find,intersect)
+import Data.List (sort,group,nub,find,intersect, tails)
+import Data.Tuple.Extra (both)
 import Text.EditDistance (defaultEditCosts, levenshteinDistance)
 
 input = lines <$> readFile "input/input02.txt"
 
-letterCounts = fmap length . group . sort
+frequencies :: String -> [Int]
+frequencies = fmap length . group . sort
 
-elemNum True = 1
-elemNum False = 0
+relevantLetterAppearance :: String -> (Bool, Bool)
+relevantLetterAppearance = (elem 2 &&& elem 3) . nub . filter (`elem` [2,3]) . frequencies
 
-relevantLetterAppearance = (\xs -> (elemNum $ elem 2 xs, elemNum $ elem 3 xs)) . nub . filter (\x -> x == 2 || x == 3) . letterCounts
-
-checksum = uncurry (*) . both getSum . foldMap (both Sum) . fmap relevantLetterAppearance
-
-solve1 = checksum <$> input
-
-smallestDistances xs = [(a, b) | a <- xs, b <- xs, levenshteinDistance defaultEditCosts a b == 1]
-
-solve2 = uncurry intersect . head . smallestDistances <$> input
+solve1 :: [String] -> Int
+solve1 = uncurry (*) . both (length . filter id) . unzip . fmap relevantLetterAppearance
 
 -- What is the checksum
-solution1 = solve1
+solution1 = solve1 <$> input
 -- 5658
 
+
+pairings :: [String] -> [(String, String)]
+pairings xs = [(a, b) | a:bs <- tails xs, b <- bs]
+
+smallestDistances :: [String] -> [(String, String)]
+smallestDistances = filter ((== 1) . uncurry (levenshteinDistance defaultEditCosts)) . pairings
+
+solve2 :: [String] -> String
+solve2 = uncurry intersect . head . smallestDistances
+
 -- What letters are common between the two correct box IDs?
-solution2 = solve2
+solution2 = solve2 <$> input
 -- nmgyjkpruszlbaqwficavxneo

@@ -2,27 +2,40 @@
 module Day05 where
 
 import Control.Arrow ((&&&))
-import Data.List (nub)
-import Data.Char (toLower, toUpper)
---import Data.Sequence
+import Data.Char (isUpper, toLower, toUpper)
+import Data.List (find, nub,iterate')
+import Control.Conditional (if')
+import Data.Maybe (fromJust, fromMaybe)
 
 input = readFile "input/input05.txt"
 
-react a (_,[])                        = (False, [a])
-react a (_,bs) |         a == head bs = (False, a : bs)
-react a (_,bs) | toLower a == head bs = (True, tail bs)
-react a (_,bs) | toUpper a == head bs = (True, tail bs)
-react a (_,bs)                        = (False, a : bs)
+toggleCase :: Char -> Char
+toggleCase = if' <$> isUpper <*> toLower <*> toUpper
 
-act = foldr react (False,[]) . snd
+data Reaction = Reacted | Stable
+    deriving Eq
 
-solve1 = length . snd . head . dropWhile fst . iterate act . (True,)
+react :: Char -> (Reaction, String) -> (Reaction, String)
+react a (b,[])                           = (b      , [a]    )
+react a (b,bs) | toggleCase a == head bs = (Reacted, tail bs)
+react a (b,bs)                           = (b      , a : bs )
+
+act :: (a, String) -> (Reaction, String)
+act = foldr react (Stable,[]) . snd
+
+solve1 :: String -> Int
+solve1 = length . snd . fromJust . find ((== Stable) . fst) . iterate' act . (Reacted,)
 
 -- How many units remain after fully reacting the polymer you scanned?
 solution1 = solve1 <$> input
 -- 10762
 
-solve2 = minimum . fmap solve1 . (\(xs,inp) -> fmap (\x -> filter ((/= x) . toLower) inp) xs) . ((nub . fmap toLower) &&& id)
+
+removeProblematic :: String -> String -> [String]
+removeProblematic inp = fmap (\problematic -> filter ((/= problematic) . toLower) inp)
+
+solve2 :: String -> Int
+solve2 = minimum . fmap solve1 . (removeProblematic <$> id <*> (nub . fmap toLower))
 
 -- What is the length of the shortest polymer you can produce
 solution2 = solve2 <$> input

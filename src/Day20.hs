@@ -2,26 +2,26 @@
 {-# LANGUAGE TupleSections    #-}
 module Day20 where
 
-import Prelude hiding (zipWith,zipWith3)
+import           Algorithm.Search (bfs,aStar)
 import           Control.Applicative (liftA3, many)
 import           Control.Arrow ((&&&), second)
-import           Data.Foldable (toList)
+import           Control.Monad.Combinators (between,sepBy)
 
+import           Data.Bifunctor (bimap)
+import           Data.Foldable (toList)
+import           Data.List (intercalate, intersperse, iterate',maximumBy)
+import qualified Data.Matrix as M
+import           Data.Matrix.Unboxed (Matrix, (!), rows, cols)
 import           Data.Maybe (catMaybes, fromJust)
 import           Data.Ord (comparing)
+import qualified Data.Sequence as S
+import           Data.Sequence (Seq,(><),(|>),(<|))
+import           Data.Tuple.Extra (both,fst3,thd3)
+import qualified Data.Vector.Unboxed as V
+import           Data.Zip (zipWith3, zipWith)
+import           Prelude hiding (zipWith,zipWith3)
 import           Text.Megaparsec (Parsec,parse,optional,(<|>),try)
 import           Text.Megaparsec.Char (char,space,string,anyChar)
-import Control.Monad.Combinators (between,sepBy)
-import qualified Data.Sequence as S
-import Data.Sequence (Seq,(><),(|>),(<|))
-import Data.List (intercalate, intersperse, iterate',maximumBy)
-import           Algorithm.Search (bfs,aStar)
-import Data.Bifunctor (bimap)
-import qualified Data.Matrix as M
-import qualified Data.Vector.Unboxed as V
-import           Data.Matrix.Unboxed (Matrix, (!), rows, cols)
-import Data.Tuple.Extra (both,fst3,thd3)
-import Data.Zip (zipWith3, zipWith)
 
 input = readFile  "input/input20.txt"
 test1 = readFile  "input/input20_test1.txt"

@@ -3,24 +3,25 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TupleSections         #-}
 module Day21 where    
+  
 import           Control.Arrow ((&&&), second)
-import Prelude hiding ((!!))
+import           Data.Bifunctor (bimap)
 import           Data.Bits ((.&.), (.|.))
+import           Data.Either (isRight, fromLeft, isLeft)
 import           Data.Function (on)
 import           Data.List.Split (chunksOf)
 import           Data.List(iterate')
+import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe,maybeToList,catMaybes,fromMaybe,mapMaybe)
 import           Data.Ord (comparing)
-import Data.Bifunctor (bimap)
-import           Data.Vector (Vector)
-import qualified Data.Vector as V
+import           Data.Set (Set, empty, insert, member)
 import qualified Data.Vector as VB
+import qualified Data.Vector as V
+import           Data.Vector (Vector)
+import           Prelude hiding ((!!))
 import           Text.Parsec (parse,many,many1,optional,(<|>))
 import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
 import           Text.Parsec.Combinator (between,sepBy)
 import           Text.ParserCombinators.Parsec.Number (int,nat)
-import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe,maybeToList,catMaybes,fromMaybe,mapMaybe)
-import Data.Set (Set, empty, insert, member)
-import Data.Either (isRight, fromLeft, isLeft)
 
 
 input = lines <$> readFile  "input/input21.txt"

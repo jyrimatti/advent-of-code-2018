@@ -1,11 +1,11 @@
 module Day18 where
 
 import           Control.Arrow ((&&&))
+import           Data.List (iterate')
 import qualified Data.Matrix.Unboxed as M
-import Data.Matrix.Unboxed (Matrix,(!))
-import qualified Data.Vector.Unboxed as V
-import Data.List (iterate')
+import           Data.Matrix.Unboxed (Matrix,(!))
 import qualified Data.Set as S
+import qualified Data.Vector.Unboxed as V
 
 input = lines <$> readFile  "input/input18.txt"
 

@@ -1,18 +1,18 @@
 {-# LANGUAGE TupleSections #-}
 module Day23 where
 
-import Control.Arrow ((&&&), first, second)
-import Data.Foldable (minimumBy)
-import Data.Function (on)
-import Data.List (groupBy, maximumBy, nub, sortOn, permutations, sort)
-import Data.Maybe (catMaybes, fromJust)
-import Data.Ord (comparing,Ord(..),Down(..))
+import           Control.Arrow ((&&&), first, second)
+import           Control.Monad.Combinators (between,sepBy)
+import           Data.Foldable (minimumBy)
+import           Data.Function (on)
+import           Data.List (groupBy, maximumBy, nub, sortOn, permutations, sort)
+import           Data.Maybe (catMaybes, fromJust)
+import           Data.Ord (comparing,Ord(..),Down(..))
+import qualified Data.Set as S
+import           Data.Tuple.Extra hiding ((&&&),first,second)
 import           Text.Megaparsec (Parsec,parse,optional,(<|>),try)
 import           Text.Megaparsec.Char (char,space,string,anyChar)
-import Control.Monad.Combinators (between,sepBy)
-import Text.Megaparsec.Char.Lexer(signed,decimal)
-import qualified Data.Set as S
-import Data.Tuple.Extra hiding ((&&&),first,second)
+import           Text.Megaparsec.Char.Lexer(signed,decimal)
 
 input = lines <$> readFile "input/input23.txt"
 test2 = lines <$> readFile "input/input23_test2.txt"
@@ -79,11 +79,9 @@ botlines :: Nanobot -> [((Int, Int, Int),(Int,Int,Int))]
 botlines (Nanobot (x,y,z) r) = (\xs -> [(xx,yy)| xx@(x1,x2,x3) <- xs, yy@(y1,y2,y3) <- xs, xx /= yy, x1/=y1 && x2/=y2 || x1/=y1 && x3/=y3 || x2/=y2 && x3/=y3]) [(a,b,c) | a <- [x-r,x,x+r], b <- [y-r,y,y+r], c <- [y-r,y,y+r], x == a && y == b || x == a && z == c || y == b && z == c, (a,b,c) /= (x,y,z)]
 
 inRangeOf :: ((Int, Int, Int),(Int,Int,Int)) -> Nanobot -> Bool
-inRangeOf box nb@(Nanobot (x,y,z) r) = 
-  (or $ fmap ($ nb) $ fmap inRange $ corners box) || 
-  (or $ fmap (intersects box) $ botlines nb)
-  {-(or $ fmap (inside box) $ [Nanobot (a,b,c) r | a <- [x-r,x+r], b <- [y-r,y+r], c <- [z-r,z+r], (x == a && y == b || x == a && z == c || y == b && z == c)]) ||
-  (or $ fmap (inside box) $ [Nanobot (a,b,c) r | a <- [x-r..x+r], b <- [y-r..y+r], c <- [z-r..z+r], manhattan (x,y,z) (a,b,c) <= r, x == a || y == b || z == c])-}
+inRangeOf box nb@(Nanobot (x,y,z) r) =
+  or (($ nb) . inRange <$> corners box) || 
+  or (intersects box <$> botlines nb)
 
 inRangeOfBots2 :: ((Int, Int, Int),(Int,Int,Int)) -> [Nanobot] -> (((Int, Int, Int),(Int,Int,Int)),Int)
 inRangeOfBots2 box = (box,) . length . filter (\nb -> inside box nb || inRangeOf box nb)

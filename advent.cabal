@@ -3,59 +3,11 @@ version: 1.0
 cabal-version: 1.22
 build-type: Simple
 
-Library
-  buildable: True
-  build-depends:
-      base,
-      containers,
-      text,
-      extra,
-      edit-distance,
-      parser-combinators,
-      megaparsec,
-      parsec,
-      parsec-numbers,
-      vector,
-      matrices,
-      search-algorithms,
-      split,
-      keys,
-      TypeCompose
-  default-language: Haskell2010
-  hs-source-dirs: src
-  other-modules:
-      Day01
-      Day02
-      Day03
-      Day04
-      Day05
-      Day06
-      Day07
-      Day08
-      Day09
-      Day10
-      Day11
-      Day12
-      Day13
-      Day14
-      Day15
-      Day16
-      Day17
-      Day18
-      Day19
-      Day20
-      Day21
-      Day22
-      Day23
-      Day24
-      Day25
-
 Executable Main
   main-is: Main.hs
   hs-source-dirs: src
   default-language: Haskell2010
   build-depends:
-      advent,
       time,
       base,
       containers,
@@ -71,32 +23,7 @@ Executable Main
       search-algorithms,
       split,
       keys,
-      TypeCompose
-  ghc-options: -O2 -fno-warn-missing-signatures
-  other-modules:
-      Day01
-      Day02
-      Day03
-      Day04
-      Day05
-      Day06
-      Day07
-      Day08
-      Day09
-      Day10
-      Day11
-      Day12
-      Day13
-      Day14
-      Day15
-      Day16
-      Day17
-      Day18
-      Day19
-      Day20
-      Day21
-      Day22
-      Day23
-      Day24
-      Day25
-
+      TypeCompose,
+      recursion-schemes,
+      cond
+  ghc-options: -O3 -fno-warn-missing-signatures

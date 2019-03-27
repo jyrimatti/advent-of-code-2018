@@ -2,17 +2,16 @@
 module Day17 where
 
 import           Control.Arrow ((&&&))
-import           Data.Maybe (fromJust, isJust)
+import           Data.Bifunctor (first,second)
+import           Data.Foldable (toList)
+import           Data.List (sortOn,concatMap,nub,find)
+import           Data.Maybe (fromJust, isJust, isNothing)
+import qualified Data.Sequence as S
+import           Data.Sequence (Seq,(<|),(|>))
 import           Text.Parsec (parse,many,many1,optionMaybe,(<|>))
 import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
 import           Text.Parsec.Combinator (between,sepBy)
 import           Text.ParserCombinators.Parsec.Number (int)
-import Data.List (sortOn,concatMap,nub,find)
-import qualified Data.Sequence as S
-import Data.Sequence (Seq,(<|),(|>))
-import Data.Foldable (toList)
-import Data.Bifunctor (first,second)
-import Data.Maybe (isNothing)
 
 input = lines <$> readFile  "input/input17.txt"
 
