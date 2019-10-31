@@ -28,6 +28,7 @@ import qualified Day23
 import qualified Day24
 import qualified Day25
 
+
 day d = putStrLn "" >> putStrLn "" >> (print =<< getCurrentTime) >> putStrLn ( "Day " ++ d ++ " ")
 half1 solution = putStr $ " half 1: " ++ show solution
 half2 solution = putStrLn "" >> putStr (" half 2: " ++ show solution)

@@ -1,9 +1,12 @@
 module Day08 where
 
-import Text.Parsec (parse,many,many1,optional,count,Parsec)
-import Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import Text.Parsec.Combinator (between,sepBy)
+import Text.Parsec                          (Parsec, count, many,
+                                                       many1, optional, parse)
+import Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import Text.Parsec.Combinator               (between, sepBy)
 import Text.ParserCombinators.Parsec.Number (int)
+
 
 input = readFile "input/input08.txt"
 

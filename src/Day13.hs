@@ -2,21 +2,28 @@
 {-# LANGUAGE TupleSections #-}
 module Day13 where
 
-import           Control.Arrow ((&&&))
-import           Data.Bifunctor (second)
-import           Data.Function (on)
-import           Data.List (sort,nub,cycle,iterate',(\\),sortBy,nubBy,groupBy)
-import qualified Data.Matrix as M
-import           Data.Matrix (Matrix, (!))
-import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe)
-import           Data.Tuple (swap)
-import qualified Data.Vector as V
-import           Data.Vector (Vector)
-import           Prelude hiding (Either(Left,Right))
-import           Text.Parsec (parse,many,many1,optional,(<|>))
-import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import           Text.Parsec.Combinator (between,sepBy)
+import           Control.Arrow                        ((&&&))
+import           Data.Bifunctor                       (second)
+import           Data.Function                        (on)
+import           Data.List                            (cycle, groupBy, iterate',
+                                                       nub, nubBy, sort, sortBy,
+                                                       (\\))
+import qualified Data.Matrix                          as M
+import           Data.Matrix                          (Matrix, (!))
+import           Data.Maybe                           (fromJust, isJust,
+                                                       isNothing, listToMaybe)
+import           Data.Tuple                           (swap)
+import qualified Data.Vector                          as V
+import           Data.Vector                          (Vector)
+import           Prelude                              hiding
+                                                       (Either (Left, Right))
+import           Text.Parsec                          (many, many1, optional,
+                                                       parse, (<|>))
+import           Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import           Text.Parsec.Combinator               (between, sepBy)
 import           Text.ParserCombinators.Parsec.Number (int)
+
 
 input = lines <$> readFile "input/input13.txt"
 
@@ -111,7 +118,7 @@ solve = (uncurry ticks &&& fst) . (withoutCarts &&& carts) . M.fromLists
 
 solve1 = swap . loc . fromJust . V.find collided . head . dropWhile (null . V.filter collided) . concat . fst . solve
 
-debug d = M.toLists . head . drop d . (\(res,map) -> (`withCarts` map) <$> concat res) . solve <$> input >>= mapM putStrLn
+debug d = M.toLists . (!! d) . (\(res,map) -> (`withCarts` map) <$> concat res) . solve <$> input >>= mapM putStrLn
 
 -- the location of the first crash
 solution1 = solve1 <$> input

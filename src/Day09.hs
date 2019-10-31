@@ -1,14 +1,17 @@
 module Day09 where
 
-import           Control.Arrow ((&&&))
-import           Data.List (iterate')
-import           Data.Maybe (fromJust)
-import qualified Data.Sequence as S
-import           Prelude hiding (round)
-import           Text.Parsec (parse,many,many1,optional)
-import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import           Text.Parsec.Combinator (between,sepBy)
+import           Control.Arrow                        ((&&&))
+import           Data.List                            (iterate')
+import           Data.Maybe                           (fromJust)
+import qualified Data.Sequence                        as S
+import           Prelude                              hiding (round)
+import           Text.Parsec                          (many, many1, optional,
+                                                       parse)
+import           Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import           Text.Parsec.Combinator               (between, sepBy)
 import           Text.ParserCombinators.Parsec.Number (int)
+
 
 input = readFile "input/input09.txt"
 

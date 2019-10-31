@@ -1,30 +1,36 @@
 {-# LANGUAGE TupleSections #-}
 module Day24 where
 
-import           Algorithm.Search (bfs)
-import           Control.Arrow ((&&&))
-import           Control.Monad ((>=>))
-import           Control.Monad.Combinators (between,sepBy,manyTill)
-import           Data.Bifunctor (second,first,bimap)
-import           Data.Foldable (maximumBy, toList)
-import           Data.Function (on)
-import           Data.List (delete, group, sort,nub,cycle,iterate',(\\),sortBy,nubBy,groupBy,sortOn,zip)
-import           Data.List.Extra (groupSortBy)
-import qualified Data.Matrix as M
-import           Data.Matrix (Matrix, (!))
-import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe,maybeToList,catMaybes,fromMaybe,mapMaybe)
-import           Data.Ord (comparing,Down(..))
-import qualified Data.Sequence as S
-import           Data.Sequence (Seq(..))
-import           Data.Tuple (swap)
-import           Data.Tuple.Extra (swap,both)
-import qualified Data.Vector as V
-import           Data.Vector (Vector)
+import           Algorithm.Search           (bfs)
+import           Control.Arrow              ((&&&))
+import           Control.Monad              ((>=>))
+import           Control.Monad.Combinators  (between, manyTill, sepBy)
+import           Data.Bifunctor             (bimap, first, second)
+import           Data.Foldable              (maximumBy, toList)
+import           Data.Function              (on)
+import           Data.List                  (cycle, delete, group, groupBy,
+                                             iterate', nub, nubBy, sort, sortBy,
+                                             sortOn, zip, (\\))
+import           Data.List.Extra            (groupSortBy)
+import qualified Data.Matrix                as M
+import           Data.Matrix                (Matrix, (!))
+import           Data.Maybe                 (catMaybes, fromJust, fromMaybe,
+                                             isJust, isNothing, listToMaybe,
+                                             mapMaybe, maybeToList)
+import           Data.Ord                   (Down (..), comparing)
+import qualified Data.Sequence              as S
+import           Data.Sequence              (Seq (..))
+import           Data.Tuple                 (swap)
+import           Data.Tuple.Extra           (both, swap)
+import qualified Data.Vector                as V
+import           Data.Vector                (Vector)
 import           Debug.Trace
-import           Prelude hiding (Either(Left,Right),round)
-import           Text.Megaparsec (Parsec,parse,optional,(<|>),try,many)
-import           Text.Megaparsec.Char (char,space,string,anyChar,letterChar)
+import           Prelude                    hiding (Either (Left, Right), round)
+import           Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parse, try, (<|>))
+import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal)
+
 
 inputLines = fmap lines . readFile 
 
@@ -47,7 +53,7 @@ data Group = Group {
 type Parser = Parsec () String
 
 armyP :: Parser String
-armyP = manyTill anyChar (char ':')
+armyP = manyTill anySingle (char ':')
 
 weaknessesP :: Parser [AttackType]
 weaknessesP = string "weak to " *> (many letterChar `sepBy` string ", ") <* optional (string "; ")

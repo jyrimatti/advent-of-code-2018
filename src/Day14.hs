@@ -1,11 +1,12 @@
 module Day14 where
 
-import           Data.Foldable (toList)
-import           Data.List (iterate',tails,isPrefixOf,isSuffixOf)
-import qualified Data.Sequence as S
-import           Data.Sequence ((><),(|>))
+import           Data.Foldable    (toList)
+import           Data.List        (isPrefixOf, isSuffixOf, iterate', tails)
+import qualified Data.Sequence    as S
+import           Data.Sequence    ((><), (|>))
 import           Data.Tuple.Extra (both)
-import           Prelude hiding ((++))
+import           Prelude          hiding ((++))
+
 
 input = 607331
 

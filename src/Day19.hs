@@ -2,26 +2,30 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 module Day19 where
-import           Control.Arrow ((&&&), second)
-import           Data.Bifunctor (bimap)
-import           Data.Bits ((.&.), (.|.))
-import           Data.Function (on)
-import           Data.List (nub, nubBy, sortOn, iterate')
-import           Data.List.Split (chunksOf)
-import           Data.Maybe
-       (fromJust, isJust, isNothing, listToMaybe, maybeToList, catMaybes,
-        fromMaybe, mapMaybe)
-import           Data.Ord (comparing)
-import qualified Data.Sequence as S
-import           Data.Sequence (Seq)
-import qualified Data.Vector.Unboxed as V
-import           Data.Vector.Unboxed (Vector)
+import           Control.Arrow                        (second, (&&&))
+import           Data.Bifunctor                       (bimap)
+import           Data.Bits                            ((.&.), (.|.))
+import           Data.Function                        (on)
+import           Data.List                            (iterate', nub, nubBy,
+                                                       sortOn)
+import           Data.List.Split                      (chunksOf)
+import           Data.Maybe                           (catMaybes, fromJust,
+                                                       fromMaybe, isJust,
+                                                       isNothing, listToMaybe,
+                                                       mapMaybe, maybeToList)
+import           Data.Ord                             (comparing)
+import qualified Data.Sequence                        as S
+import           Data.Sequence                        (Seq)
+import qualified Data.Vector.Unboxed                  as V
+import           Data.Vector.Unboxed                  (Vector)
 import           Numeric.Natural
-import           Prelude hiding ((!!))
-import           Text.Parsec (parse,many,many1,optional,(<|>))
-import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import           Text.Parsec.Combinator (between,sepBy)
-import           Text.ParserCombinators.Parsec.Number (int,nat)
+import           Text.Parsec                          (many, many1, optional,
+                                                       parse, (<|>))
+import           Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import           Text.Parsec.Combinator               (between, sepBy)
+import           Text.ParserCombinators.Parsec.Number (int, nat)
+
 
 
 input = lines <$> readFile  "input/input19.txt"
@@ -103,8 +107,8 @@ mkInstructions = S.fromList . fmap (\(oc,a,b,c) -> mkInstruction oc a b c)
 (!) :: Registers -> Natural -> Int
 (!) regs i = regs V.! fromIntegral i
 
-(!!) :: Instructions -> Natural -> Instruction
-(!!) instrs i = S.index instrs (fromIntegral i)
+(!!!) :: Instructions -> Natural -> Instruction
+(!!!) instrs i = S.index instrs (fromIntegral i)
 
 update' :: Input -> Int -> Registers -> Registers
 update' (Reg i) val = (`V.unsafeUpd` [(fromIntegral i, val)])
@@ -131,7 +135,7 @@ type IP = Natural
 
 process :: Input -> Seq Instruction -> IP -> Registers -> (IP,Registers)
 process ipReg@(Reg r) instructions ip registers = let
-    instr = instructions !! ip
+    instr = instructions !!! ip
     foo = update' ipReg (fromIntegral ip) registers
     bar = behave instr foo
   in
@@ -154,7 +158,7 @@ solution1 = solve [0,0,0,0,0,0] <$> input
 factors n = [x | x <- [1..n], n `mod` x == 0]
 
 -- seems to be factorization, and the number to factorize is initialized to reg 4
-solve2 = sum . factors . (! 4) . snd . head . drop 100 . uncurry (solv (V.fromList [1,0,0,0,0,0])) . bimap Reg mkInstructions . parseData
+solve2 = sum . factors . (! 4) . snd . (!! 100) . uncurry (solv (V.fromList [1,0,0,0,0,0])) . bimap Reg mkInstructions . parseData
 
 -- this time, register 0 started with the value 1. What value is left in register 0
 solution2 = solve2 <$> input

@@ -1,17 +1,22 @@
 {-# LANGUAGE TupleSections #-}
 module Day17 where
 
-import           Control.Arrow ((&&&))
-import           Data.Bifunctor (first,second)
-import           Data.Foldable (toList)
-import           Data.List (sortOn,concatMap,nub,find)
-import           Data.Maybe (fromJust, isJust, isNothing)
-import qualified Data.Sequence as S
-import           Data.Sequence (Seq,(<|),(|>))
-import           Text.Parsec (parse,many,many1,optionMaybe,(<|>))
-import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import           Text.Parsec.Combinator (between,sepBy)
+import           Control.Arrow                        ((&&&))
+import           Data.Bifunctor                       (first, second)
+import           Data.Foldable                        (toList)
+import           Data.List                            (concatMap, find, nub,
+                                                       sortOn)
+import           Data.Maybe                           (fromJust, isJust,
+                                                       isNothing)
+import qualified Data.Sequence                        as S
+import           Data.Sequence                        (Seq, (<|), (|>))
+import           Text.Parsec                          (many, many1, optionMaybe,
+                                                       parse, (<|>))
+import           Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import           Text.Parsec.Combinator               (between, sepBy)
 import           Text.ParserCombinators.Parsec.Number (int)
+
 
 input = lines <$> readFile  "input/input17.txt"
 

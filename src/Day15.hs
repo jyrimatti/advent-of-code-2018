@@ -2,27 +2,37 @@
 {-# LANGUAGE TupleSections #-}
 module Day15 where
 
-import           Algorithm.Search (bfs)
-import           Control.Arrow ((&&&))
-import           Data.Bifunctor (second,first,bimap)
-import           Data.Foldable (toList)
-import           Data.Function (on)
-import           Data.List (sort,nub,cycle,iterate',(\\),sortBy,nubBy,groupBy,sortOn,zip)
-import           Data.List.Extra (groupSortBy)
-import qualified Data.Matrix as M
-import           Data.Matrix (Matrix, (!))
-import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe,maybeToList,catMaybes,fromMaybe,mapMaybe)
-import           Data.Ord (comparing)
-import qualified Data.Sequence as S
-import           Data.Sequence (Seq)
-import           Data.Tuple (swap)
-import qualified Data.Vector as V
-import           Data.Vector (Vector)
-import           Prelude hiding (Either(Left,Right),round)
-import           Text.Parsec (parse,many,many1,optional,(<|>))
-import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import           Text.Parsec.Combinator (between,sepBy)
+import           Algorithm.Search                     (bfs)
+import           Control.Arrow                        ((&&&))
+import           Data.Bifunctor                       (bimap, first, second)
+import           Data.Foldable                        (toList)
+import           Data.Function                        (on)
+import           Data.List                            (cycle, groupBy, iterate',
+                                                       nub, nubBy, sort, sortBy,
+                                                       sortOn, zip, (\\))
+import           Data.List.Extra                      (groupSortBy)
+import qualified Data.Matrix                          as M
+import           Data.Matrix                          (Matrix, (!))
+import           Data.Maybe                           (catMaybes, fromJust,
+                                                       fromMaybe, isJust,
+                                                       isNothing, listToMaybe,
+                                                       mapMaybe, maybeToList)
+import           Data.Ord                             (comparing)
+import qualified Data.Sequence                        as S
+import           Data.Sequence                        (Seq)
+import           Data.Tuple                           (swap)
+import qualified Data.Vector                          as V
+import           Data.Vector                          (Vector)
+import           Prelude                              hiding
+                                                       (Either (Left, Right),
+                                                       round)
+import           Text.Parsec                          (many, many1, optional,
+                                                       parse, (<|>))
+import           Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import           Text.Parsec.Combinator               (between, sepBy)
 import           Text.ParserCombinators.Parsec.Number (int)
+
 
 inputLines = fmap lines . readFile 
 

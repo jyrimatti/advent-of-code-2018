@@ -2,26 +2,34 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TupleSections         #-}
-module Day21 where    
-  
-import           Control.Arrow ((&&&), second)
-import           Data.Bifunctor (bimap)
-import           Data.Bits ((.&.), (.|.))
-import           Data.Either (isRight, fromLeft, isLeft)
-import           Data.Function (on)
-import           Data.List.Split (chunksOf)
-import           Data.List(iterate')
-import           Data.Maybe (isJust,fromJust,isNothing,listToMaybe,maybeToList,catMaybes,fromMaybe,mapMaybe)
-import           Data.Ord (comparing)
-import           Data.Set (Set, empty, insert, member)
-import qualified Data.Vector as VB
-import qualified Data.Vector as V
-import           Data.Vector (Vector)
-import           Prelude hiding ((!!))
-import           Text.Parsec (parse,many,many1,optional,(<|>))
-import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import           Text.Parsec.Combinator (between,sepBy)
-import           Text.ParserCombinators.Parsec.Number (int,nat)
+module Day21 where
+
+import           Control.Arrow                        (second, (&&&))
+import           Data.Bifunctor                       (bimap)
+import           Data.Bits                            ((.&.), (.|.))
+import           Data.Either                          (fromLeft, isLeft,
+                                                       isRight)
+import           Data.Function                        (on)
+import           Data.List                            (iterate')
+import           Data.List.Split                      (chunksOf)
+import           Data.Maybe                           (catMaybes, fromJust,
+                                                       fromMaybe, isJust,
+                                                       isNothing, listToMaybe,
+                                                       mapMaybe, maybeToList)
+import           Data.Ord                             (comparing)
+import           Data.Set                             (Set, empty, insert,
+                                                       member)
+import qualified Data.Vector                          as VB
+import qualified Data.Vector                          as V
+import           Data.Vector                          (Vector)
+import           Prelude                              hiding ((!!))
+import           Text.Parsec                          (many, many1, optional,
+                                                       parse, (<|>))
+import           Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import           Text.Parsec.Combinator               (between, sepBy)
+import           Text.ParserCombinators.Parsec.Number (int, nat)
+
 
 
 input = lines <$> readFile  "input/input21.txt"

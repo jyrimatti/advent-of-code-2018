@@ -4,23 +4,28 @@
 {-# LANGUAGE TupleSections         #-}
 module Day16 where
 
-import           Control.Arrow ((&&&))
-import           Data.Bifunctor (bimap)
-import           Data.Bits ((.&.), (.|.))
-import           Data.Function (on)
-import           Data.List (nub, nubBy, sortOn, iterate')
-import           Data.List.Split (chunksOf)
-import           Data.Maybe
-       (fromJust, isJust, isNothing, listToMaybe, maybeToList, catMaybes,
-        fromMaybe, mapMaybe)
-import           Data.Ord (comparing)
-import qualified Data.Sequence as S
-import           Data.Sequence (Seq)
+import           Control.Arrow                        ((&&&))
+import           Data.Bifunctor                       (bimap)
+import           Data.Bits                            ((.&.), (.|.))
+import           Data.Function                        (on)
+import           Data.List                            (iterate', nub, nubBy,
+                                                       sortOn)
+import           Data.List.Split                      (chunksOf)
+import           Data.Maybe                           (catMaybes, fromJust,
+                                                       fromMaybe, isJust,
+                                                       isNothing, listToMaybe,
+                                                       mapMaybe, maybeToList)
+import           Data.Ord                             (comparing)
+import qualified Data.Sequence                        as S
+import           Data.Sequence                        (Seq)
 import           Numeric.Natural
-import           Text.Parsec (parse,many,many1,optional,(<|>))
-import           Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import           Text.Parsec.Combinator (between,sepBy)
+import           Text.Parsec                          (many, many1, optional,
+                                                       parse, (<|>))
+import           Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import           Text.Parsec.Combinator               (between, sepBy)
 import           Text.ParserCombinators.Parsec.Number (int)
+
 
 input = lines <$> readFile  "input/input16.txt"
 input2 = lines <$> readFile  "input/input16_2.txt"

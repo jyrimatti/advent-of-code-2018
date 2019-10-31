@@ -2,26 +2,29 @@
 {-# LANGUAGE TupleSections    #-}
 module Day20 where
 
-import           Algorithm.Search (bfs,aStar)
-import           Control.Applicative (liftA3, many)
-import           Control.Arrow ((&&&), second)
-import           Control.Monad.Combinators (between,sepBy)
+import           Algorithm.Search          (aStar, bfs)
+import           Control.Applicative       (liftA3, many)
+import           Control.Arrow             (second, (&&&))
+import           Control.Monad.Combinators (between, sepBy)
 
-import           Data.Bifunctor (bimap)
-import           Data.Foldable (toList)
-import           Data.List (intercalate, intersperse, iterate',maximumBy)
-import qualified Data.Matrix as M
-import           Data.Matrix.Unboxed (Matrix, (!), rows, cols)
-import           Data.Maybe (catMaybes, fromJust)
-import           Data.Ord (comparing)
-import qualified Data.Sequence as S
-import           Data.Sequence (Seq,(><),(|>),(<|))
-import           Data.Tuple.Extra (both,fst3,thd3)
-import qualified Data.Vector.Unboxed as V
-import           Data.Zip (zipWith3, zipWith)
-import           Prelude hiding (zipWith,zipWith3)
-import           Text.Megaparsec (Parsec,parse,optional,(<|>),try)
-import           Text.Megaparsec.Char (char,space,string,anyChar)
+import           Data.Bifunctor            (bimap)
+import           Data.Foldable             (toList)
+import           Data.List                 (intercalate, intersperse, iterate',
+                                            maximumBy)
+import qualified Data.Matrix               as M
+import           Data.Matrix.Unboxed       (Matrix, cols, rows, (!))
+import           Data.Maybe                (catMaybes, fromJust)
+import           Data.Ord                  (comparing)
+import qualified Data.Sequence             as S
+import           Data.Sequence             (Seq, (<|), (><), (|>))
+import           Data.Tuple.Extra          (both, fst3, thd3)
+import qualified Data.Vector.Unboxed       as V
+import           Data.Zip                  (zipWith, zipWith3)
+import           Prelude                   hiding (zipWith, zipWith3)
+import           Text.Megaparsec           (Parsec, anySingle, optional, parse,
+                                            try, (<|>))
+import           Text.Megaparsec.Char      (char, space, string)
+
 
 input = readFile  "input/input20.txt"
 test1 = readFile  "input/input20_test1.txt"

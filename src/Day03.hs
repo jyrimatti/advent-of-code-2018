@@ -1,18 +1,28 @@
-{-# LANGUAGE TupleSections #-}
 module Day03 where
 
-import           Control.Arrow ((&&&))
-import           Data.List (sort,group,groupBy,sortBy,find)
-import           Data.List.Extra (groupSortOn)
-import Data.Tuple.Extra (snd3, thd3)
-import           Data.Maybe (fromJust)
-import qualified Data.Set as Set (fromList)
-import           Data.Set (notMember)
-import           Text.Megaparsec (Parsec,parse,optional,(<|>),try,many)
-import           Text.Megaparsec.Char (char,space,string,anyChar,letterChar)
-import           Text.Megaparsec.Char.Lexer (decimal,signed)
+import Control.Applicative        (liftA2)
+import Control.Arrow              ((&&&))
+import Data.Aviary.Birds
+import Data.List                  (find, group, groupBy, sort, sortBy)
+import Data.List.Extra            (groupSortOn)
+import Data.Maybe                 (fromJust)
+import Data.Profunctor
+import Data.Set                   as Set (fromList, notMember)
+import Data.Tuple.Extra           (snd3, thd3)
+import Text.Megaparsec            (Parsec, many, optional, parse, try,
+                                             (<|>))
+import Text.Megaparsec.Char       (char, letterChar, space, string)
+import Text.Megaparsec.Char.Lexer (decimal, signed)
+import Universum ((...))
+import Util
 
-input = lines <$> readFile "input/input03.txt"
+
+
+
+
+
+input = fmap claim . lines <$> readFile "input/input03.txt"
+
 data Claim = Claim {
   claimId :: Int,
   x       :: Int,
@@ -24,28 +34,40 @@ data Claim = Claim {
 type Parser = Parsec () String
 
 claimP :: Parser Claim
-claimP = Claim <$> (char '#' *> decimal) <*> (string " @ " *> decimal) <*> (char ',' *> decimal) <*> (string ": " *> decimal) <*> (char 'x' *> decimal)
+claimP = Claim <$> (char '#' *> decimal)
+               <*> (string " @ " *> decimal)
+               <*> (char ',' *> decimal)
+               <*> (string ": " *> decimal)
+               <*> (char 'x' *> decimal)
 
 claim :: String -> Claim
 claim = either undefined id . parse claimP ""
 
-
-range :: Int -> Int -> [Int]
-range start amount = take amount [start..]
+range :: Int -- amount
+      -> Int -- start
+      -> [Int]
+-- range = flip (dove take) enumFrom
+range = take <$>> id <*< enumFrom
 
 allPairs :: [Int] -> [Int] -> [(Int, Int)]
-allPairs xs ys = [(x,y) | x <- xs, y <- ys]
+allPairs = liftA2 (,) -- Like: lift the tuple constructor to work with lists, using the applicative effect (which happens to be cartesian product)
+--allPairs = (<*>) . ((,) <$>)
+-- allPairs xs ys = (,) <$> xs <*> ys          -- readable version, but pointful :(
+-- allPairs xs ys = [(x,y) | x <- xs, y <- ys] -- readable version, but pointful :(
 
 claimInches :: Claim -> [(Int, Int)]
-claimInches = allPairs <$> (range <$> x <*> width) <*> (range <$> y <*> height)
+claimInches = allPairs <$> (range <$> width <*> x)
+                       <*> (range <$> height <*> y)
 
-idAndInches :: Claim -> [(Int, (Int, Int))]
-idAndInches = fmap <$> (,) . claimId <*> claimInches
+type IdsAndInches = [(Int, (Int, Int))]
 
-claimsOnInches :: [String] -> [[(Int, (Int, Int))]]
-claimsOnInches = groupSortOn snd . concatMap idAndInches . fmap claim
+idAndInches :: Claim -> IdsAndInches
+idAndInches = zip <$> repeat . claimId <*> claimInches
 
-solve1 :: [String] -> Int
+claimsOnInches :: [Claim] -> [IdsAndInches]
+claimsOnInches = groupSortOn snd . concatMap idAndInches
+
+solve1 :: [Claim] -> Int
 solve1 = length . filter ((>=2) . length) . claimsOnInches
 
 -- How many square inches of fabric are within two or more claims?
@@ -53,14 +75,24 @@ solution1 = solve1 <$> input
 -- 110389
 
 
-claimIds :: [[(Int, (Int,Int))]] -> [Int]
+claimIds :: [IdsAndInches] -> [Int]
 claimIds = concatMap (fmap fst)
 
-claimIdsOfInchesWithClaims :: (Int -> Bool) -> [String] -> [Int]
-claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length) . claimsOnInches
+claimIdsOfInchesWithClaims :: (Int -> Bool) -> [IdsAndInches] -> [Int]
+--claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length)
+--claimIdsOfInchesWithClaims = (claimIds .) . filter . (. length)
+--claimIdsOfInchesWithClaims = dimap (. length) (claimIds .) filter   -- profunctor!
+claimIdsOfInchesWithClaims =  claimIds ... filter . (. length)
+-- Think about it like this: We modify the filter function so, that
+-- 1) we transform its input (the predicate) with length
+-- 2) we transform its output (function from list to list) with claimIds
 
-solve2 :: [String] -> Int
-solve2 = fromJust . (find <$> flip notMember . Set.fromList . claimIdsOfInchesWithClaims (> 1) <*> claimIdsOfInchesWithClaims (== 1))
+findNonOverlapping :: [IdsAndInches] -> Maybe Int
+findNonOverlapping = find <$> flip notMember . Set.fromList . claimIdsOfInchesWithClaims (> 1)
+                          <*> claimIdsOfInchesWithClaims (== 1)
+
+solve2 :: [Claim] -> Int
+solve2 = fromJust . findNonOverlapping . claimsOnInches
 
 -- What is the ID of the only claim that doesn't overlap?
 solution2 = solve2 <$> input

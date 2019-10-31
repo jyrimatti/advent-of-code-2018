@@ -25,5 +25,9 @@ Executable Main
       keys,
       TypeCompose,
       recursion-schemes,
-      cond
+      cond,
+      data-aviary,
+      lens,
+      profunctors,
+      universum
   ghc-options: -O3 -fno-warn-missing-signatures

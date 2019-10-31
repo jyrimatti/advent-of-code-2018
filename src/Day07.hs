@@ -2,14 +2,17 @@
 {-# LANGUAGE TupleSections    #-}
 module Day07 where
 
-import Control.Arrow ((&&&))
-import Data.List (find, nub, delete, sort, iterate')
-import Data.Maybe (fromJust,isNothing,isJust,fromMaybe)
-import Data.Tuple.Extra (fst3, snd3, thd3)
+import Control.Arrow              ((&&&))
+import Data.List                  (delete, find, iterate', nub, sort)
+import Data.Maybe                 (fromJust, fromMaybe, isJust,
+                                             isNothing)
+import Data.Tuple.Extra           (fst3, snd3, thd3)
 import Numeric.Natural
-import Text.Megaparsec (Parsec,parse,optional,(<|>),try,many)
-import Text.Megaparsec.Char (char,space,string,anyChar,letterChar,notChar)
-import Text.Megaparsec.Char.Lexer (decimal,signed)
+import Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parse, try, (<|>))
+import Text.Megaparsec.Char       (char, letterChar, space, string)
+import Text.Megaparsec.Char.Lexer (decimal, signed)
+
 
 input = lines <$> readFile "input/input07.txt"
 
@@ -18,7 +21,7 @@ type Parser = Parsec () String
 type Rule = (Char, Char, Maybe Int)
 
 stepP :: Parser Rule
-stepP = (,,Nothing) <$> (string "Step " *> anyChar) <*> (string " must be finished before step " *> anyChar <* string " can begin.")
+stepP = (,,Nothing) <$> (string "Step " *> anySingle) <*> (string " must be finished before step " *> anySingle <* string " can begin.")
 
 step :: String -> Rule
 step = either undefined id . parse stepP ""

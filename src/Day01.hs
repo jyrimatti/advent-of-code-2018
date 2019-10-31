@@ -1,10 +1,15 @@
 module Day01 where
 
-import Data.Either (isRight, fromLeft)
-import Data.List (find)
-import Data.Maybe (catMaybes, fromJust, isNothing, isJust, mapMaybe)
-import Data.Set (Set, empty, insert, member, elemAt, lookupIndex)
 import Control.Arrow ((&&&))
+import Control.Monad (when)
+import Data.Either   (fromLeft, isRight)
+import Data.List     (find)
+import Data.Maybe    (catMaybes, fromJust, isJust, isNothing,
+                                mapMaybe)
+import Data.Set      (Set, elemAt, empty, insert, lookupIndex, member)
+import Util
+
+
 
 input :: IO [Int]
 input = fmap parseInt . lines <$> readFile "input/input01.txt"
@@ -18,13 +23,13 @@ solution1 = sum <$> input
 
 
 findElem :: Int -> Set Int -> Maybe Int
-findElem x = fmap . flip elemAt <$> id <*> lookupIndex x
+findElem = fmap . const <$$>> arg1 <*< lookupIndex
 
-markIfContains :: (Maybe Int, Set Int) -> Int -> (Maybe Int, Set Int)
-markIfContains (_,set) = (`findElem` set) &&& (`insert` set)
+markIfContains :: Int -> Set Int -> (Maybe Int, Set Int)
+markIfContains = (,) <$$>> findElem <*< insert
 
 solve2 :: [Int] -> Int
-solve2 = head . mapMaybe fst . scanl markIfContains (Nothing,empty) . scanl1 (+) . cycle
+solve2 = head . mapMaybe fst . scanl (flip markIfContains . snd) (Nothing,empty) . scanl1 (+) . cycle
 
 -- What is the first frequency your device reaches twice?
 solution2 = solve2 <$> input

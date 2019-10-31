@@ -1,15 +1,19 @@
 module Day10 where
 
-import Control.Arrow ((&&&))
-import Data.Function (on)
-import Data.List (sortBy,groupBy,nub,sort)
-import Data.List.Extra (groupSortBy,groupOn)
-import Data.Tuple (swap)
-import Data.Tuple.Extra (first)
-import Text.Parsec (parse,many,many1,optional)
-import Text.Parsec.Char (char,space,string,letter,digit,anyChar)
-import Text.Parsec.Combinator (between,sepBy)
+import Control.Arrow                        ((&&&))
+import Data.Function                        (on)
+import Data.List                            (groupBy, nub, sort,
+                                                       sortBy)
+import Data.List.Extra                      (groupOn, groupSortBy)
+import Data.Tuple                           (swap)
+import Data.Tuple.Extra                     (first)
+import Text.Parsec                          (many, many1, optional,
+                                                       parse)
+import Text.Parsec.Char                     (anyChar, char, digit,
+                                                       letter, space, string)
+import Text.Parsec.Combinator               (between, sepBy)
 import Text.ParserCombinators.Parsec.Number (int)
+
 
 input = lines <$> readFile "input/input10.txt"
 

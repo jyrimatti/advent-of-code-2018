@@ -1,12 +1,13 @@
 module Day11 where
 
-import           Control.Arrow ((&&&))
-import           Data.Function (on)
-import           Data.List (maximumBy,sortBy,find)
-import qualified Data.Map.Strict as M
-import           Data.Maybe (fromJust)
+import           Control.Arrow    ((&&&))
+import           Data.Function    (on)
+import           Data.List        (find, maximumBy, sortBy)
+import qualified Data.Map.Strict  as M
+import           Data.Maybe       (fromJust)
 import           Data.Tuple.Extra (both)
-import           Prelude hiding (subtract)
+import           Prelude          hiding (subtract)
+
 
 input = 6392
 

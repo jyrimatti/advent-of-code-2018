@@ -1,18 +1,21 @@
 {-# LANGUAGE TupleSections #-}
 module Day23 where
 
-import           Control.Arrow ((&&&), first, second)
-import           Control.Monad.Combinators (between,sepBy)
-import           Data.Foldable (minimumBy)
-import           Data.Function (on)
-import           Data.List (groupBy, maximumBy, nub, sortOn, permutations, sort)
-import           Data.Maybe (catMaybes, fromJust)
-import           Data.Ord (comparing,Ord(..),Down(..))
-import qualified Data.Set as S
-import           Data.Tuple.Extra hiding ((&&&),first,second)
-import           Text.Megaparsec (Parsec,parse,optional,(<|>),try)
-import           Text.Megaparsec.Char (char,space,string,anyChar)
-import           Text.Megaparsec.Char.Lexer(signed,decimal)
+import           Control.Arrow              (first, second, (&&&))
+import           Control.Monad.Combinators  (between, sepBy)
+import           Data.Foldable              (minimumBy)
+import           Data.Function              (on)
+import           Data.List                  (groupBy, maximumBy, nub,
+                                             permutations, sort, sortOn)
+import           Data.Maybe                 (catMaybes, fromJust)
+import           Data.Ord                   (Down (..), Ord (..), comparing)
+import qualified Data.Set                   as S
+import           Data.Tuple.Extra           hiding (first, second, (&&&))
+import           Text.Megaparsec            (Parsec, optional, parse, try,
+                                             (<|>))
+import           Text.Megaparsec.Char       (char, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
+
 
 input = lines <$> readFile "input/input23.txt"
 test2 = lines <$> readFile "input/input23_test2.txt"
@@ -80,13 +83,13 @@ botlines (Nanobot (x,y,z) r) = (\xs -> [(xx,yy)| xx@(x1,x2,x3) <- xs, yy@(y1,y2,
 
 inRangeOf :: ((Int, Int, Int),(Int,Int,Int)) -> Nanobot -> Bool
 inRangeOf box nb@(Nanobot (x,y,z) r) =
-  or (($ nb) . inRange <$> corners box) || 
+  or (($ nb) . inRange <$> corners box) ||
   or (intersects box <$> botlines nb)
 
 inRangeOfBots2 :: ((Int, Int, Int),(Int,Int,Int)) -> [Nanobot] -> (((Int, Int, Int),(Int,Int,Int)),Int)
 inRangeOfBots2 box = (box,) . length . filter (\nb -> inside box nb || inRangeOf box nb)
 
-getCorners multiplier = nub . fmap (\(x,y,z) -> (x `div` multiplier * multiplier,y `div` multiplier * multiplier,z `div` multiplier * multiplier)) . fmap pos
+getCorners multiplier = nub . fmap ((\(x,y,z) -> (x `div` multiplier * multiplier,y `div` multiplier * multiplier,z `div` multiplier * multiplier)) . pos)
 
 limits = (minimum &&& maximum) . concatMap (\(a,b,c) -> [a,b,c])
 
@@ -94,7 +97,7 @@ boxify step ((x1,y1,z1),(x2,y2,z2)) = nub $ [((x,y,z),(x+step,y+step,z+step)) | 
 
 foo1 multiplier = maximumsBy snd . ((\fs bs -> fmap ($ bs) fs) <$> fmap inRangeOfBots2 . (\(mi,ma) -> boxify multiplier ((mi,mi,mi),(ma,ma,ma))) . limits . getCorners multiplier <*> id) . fmap nanobot
 
-foo2 box multiplier = maximumsBy snd . (\bs -> fmap ($ bs) $ fmap inRangeOfBots2 $ boxify multiplier box) . fmap nanobot
+foo2 box multiplier = maximumsBy snd . (\bs -> (($ bs) . inRangeOfBots2) <$> boxify multiplier box) . fmap nanobot
 
 intersects box line@(a,b) = intersects_ box line && intersects_ box (b,a)
 
@@ -106,7 +109,7 @@ intersects_ ((x1,y1,z1),(x2,y2,z2)) ((a1,b1,c1),(d2,e2,f2)) = let
 
     tmin = -9999999999999999999
     tmax = 9999999999999999999
- 
+
     tx1 = fromIntegral (x1 - a1) / fromIntegral a2
     tx2 = fromIntegral (x2 - a1) / fromIntegral a2
 
@@ -124,8 +127,8 @@ intersects_ ((x1,y1,z1),(x2,y2,z2)) ((a1,b1,c1),(d2,e2,f2)) = let
 
     tmin3 = max tmin2 (min tz1 tz2)
     tmax3 = min tmax2 (max tz1 tz2)
- 
-  in 
+
+  in
     tmax3 >= tmin3 && tmax3 >= 0
 
 -- What is the shortest manhattan distance between any of those points and 0,0,0?
@@ -161,7 +164,7 @@ inp strs = fmap (distanceToOrigin &&& id) $ sortOn (Down . botsInRange) $ do
 tst2 strs = do
   (x1,_) <- foo1 10 strs
   ((b1,b2),bots) <- foo2 x1 1 strs
-  pure $ reverse $ sort $ fmap ((`inRangeOfBots` (fmap nanobot strs)) &&& manhattan (0,0,0) &&& id) [b1,b2]
+  pure $ sortOn Down $ fmap ((`inRangeOfBots` fmap nanobot strs) &&& manhattan (0,0,0) &&& id) [b1,b2]
 
 inp2 strs = do
   (x1,_) <- foo1   100000000 strs
@@ -173,7 +176,7 @@ inp2 strs = do
   (x7,_) <- foo2 x6 100 strs
   (x8,_) <- foo2 x7 10 strs
   ((b1,b2),bots) <- foo2 x8 1 strs
-  pure $ head $ reverse $ sort $ fmap ((`inRangeOfBots` (fmap nanobot strs)) &&& manhattan (0,0,0) &&& id) [b1,b2]
+  pure $ head $ sortOn Down $ fmap ((`inRangeOfBots` fmap nanobot strs) &&& manhattan (0,0,0) &&& id) [b1,b2]
 
 ss2 = inp2 <$> input
 tt2 = tst2 <$> test2

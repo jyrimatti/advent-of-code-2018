@@ -1,11 +1,13 @@
 {-# LANGUAGE TupleSections #-}
 module Day05 where
 
-import Control.Arrow ((&&&))
-import Data.Char (isUpper, toLower, toUpper)
-import Data.List (find, nub,iterate')
+import Control.Arrow       ((&&&))
 import Control.Conditional (if')
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Char           (isUpper, toLower, toUpper)
+import Data.List           (find, iterate', nub)
+import Data.Maybe          (fromJust, fromMaybe)
+import Universum.VarArg               ( (...) )
+import Util
 
 input = readFile "input/input05.txt"
 
@@ -15,10 +17,15 @@ toggleCase = if' <$> isUpper <*> toLower <*> toUpper
 data Reaction = Reacted | Stable
     deriving Eq
 
+--react :: Char -> (Reaction, String) -> (Reaction, String)
+--react a (b,[])                           = (b      , [a]    )
+--react a (b,bs) | toggleCase a == head bs = (Reacted, tail bs)
+--react a (b,bs)                           = (b      , a : bs )
+
 react :: Char -> (Reaction, String) -> (Reaction, String)
-react a (b,[])                           = (b      , [a]    )
-react a (b,bs) | toggleCase a == head bs = (Reacted, tail bs)
-react a (b,bs)                           = (b      , a : bs )
+react = if' <$$>>> (== "") . snd ... arg2                <*< ((,) <$$>> fst ... arg2 <*< singleton ... arg1) <*< (
+        if' <$$>>> ((==) <$>> toggleCase <*< head . snd) <*< (Reacted,) . tail . snd ... arg2                <*< (
+                                                              (,) <$$>> fst ... arg2 <*< ((:) <$>> id <*< snd)))
 
 act :: (a, String) -> (Reaction, String)
 act = foldr react (Stable,[]) . snd
@@ -32,7 +39,8 @@ solution1 = solve1 <$> input
 
 
 removeProblematic :: String -> String -> [String]
-removeProblematic inp = fmap (\problematic -> filter ((/= problematic) . toLower) inp)
+--removeProblematic inp = fmap (\problematic -> filter ((/= problematic) . toLower) inp)
+removeProblematic = fmap . ( flip filter <$>> id <*< (. toLower) . flip (/=) )
 
 solve2 :: String -> Int
 solve2 = minimum . fmap solve1 . (removeProblematic <$> id <*> (nub . fmap toLower))
