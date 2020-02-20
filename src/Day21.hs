@@ -4,6 +4,7 @@
 {-# LANGUAGE TupleSections         #-}
 module Day21 where
 
+import           Control.Applicative.Combinators (count, between, sepBy, optional)
 import           Control.Arrow                        (second, (&&&))
 import           Data.Bifunctor                       (bimap)
 import           Data.Bits                            ((.&.), (.|.))
@@ -23,19 +24,21 @@ import qualified Data.Vector                          as VB
 import qualified Data.Vector                          as V
 import           Data.Vector                          (Vector)
 import           Prelude                              hiding ((!!))
-import           Text.Parsec                          (many, many1, optional,
-                                                       parse, (<|>))
-import           Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import           Text.Parsec.Combinator               (between, sepBy)
-import           Text.ParserCombinators.Parsec.Number (int, nat)
-
+import           Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char       (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
 
 
 input = lines <$> readFile  "input/input21.txt"
 
-ipP = string "#ip " *> nat
-instrP = (,,,) <$> (toOpcode <$> many letter) <*> (char ' ' *> int) <*> (char ' ' *> int) <*> (char ' ' *> int)
+type Parser = Parsec () String
+
+ipP :: Parser Integer
+ipP = string "#ip " *> decimal
+
+instrP :: Parser (Opcode,Integer,Integer,Integer)
+instrP = (,,,) <$> (toOpcode <$> many letterChar) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal)
 
 toOpcode "addr" = AddR
 toOpcode "addi" = AddI
@@ -54,7 +57,7 @@ toOpcode "eqir" = EqIR
 toOpcode "eqri" = EqRI
 toOpcode "eqrr" = EqRR
 
-ps p = either undefined id . parse p ""
+ps p = fromJust . parseMaybe p
 ip = ps ipP
 instr :: String -> (Opcode,Integer,Integer,Integer)
 instr = ps instrP

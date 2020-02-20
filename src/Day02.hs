@@ -13,10 +13,12 @@ frequencies :: String -> [Int]
 frequencies = fmap length . group . sort
 
 relevantLetterAppearance :: String -> (Bool, Bool)
-relevantLetterAppearance = (elem 2 &&& elem 3) . filter (`elem` [2,3]) . frequencies
+relevantLetterAppearance =         (elem 2 &&& elem 3) . filter (`elem` [2,3]) . frequencies
+-- Same as:              = ((,) <$> elem 2 <*> elem 3) . filter (`elem` [2,3]) . frequencies
 
 solve1 :: [String] -> Int
 solve1 = uncurry (*) . both (length . filter (== True)) . unzip . fmap relevantLetterAppearance
+-- uncurry (*) is same as: ((*) <$> fst <*> snd)
 
 -- What is the checksum
 solution1 = solve1 <$> input

@@ -1,6 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 module Day17 where
 
+import           Control.Applicative.Combinators (count, between, sepBy, optional)
 import           Control.Arrow                        ((&&&))
 import           Data.Bifunctor                       (first, second)
 import           Data.Foldable                        (toList)
@@ -10,18 +11,19 @@ import           Data.Maybe                           (fromJust, isJust,
                                                        isNothing)
 import qualified Data.Sequence                        as S
 import           Data.Sequence                        (Seq, (<|), (|>))
-import           Text.Parsec                          (many, many1, optionMaybe,
-                                                       parse, (<|>))
-import           Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import           Text.Parsec.Combinator               (between, sepBy)
-import           Text.ParserCombinators.Parsec.Number (int)
+import           Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char       (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
 
 
 input = lines <$> readFile  "input/input17.txt"
 
-coordOrRangeP = (\c start mend -> (c, maybe [start] (\e -> [start..e]) mend)) <$> (char 'x' <|> char 'y') <*> (char '=' *> int) <*> optionMaybe (string ".." *> int)
+type Parser = Parsec () String
 
+coordOrRangeP = (\c start mend -> (c, maybe [start] (\e -> [start..e]) mend)) <$> (char 'x' <|> char 'y') <*> (char '=' *> decimal) <*> optional (string ".." *> decimal)
+
+rowP :: Parser [Coord]
 rowP = (\[xs,ys] -> [(Clay,x,y) | x <- xs, y <- ys]) . fmap snd . sortOn fst <$> coordOrRangeP `sepBy` string ", "
 
 data Substance = Spring | Empty | Clay | Water | Retained deriving Eq
@@ -38,7 +40,7 @@ type Map = Seq (Seq Substance)
 showMap :: Map -> [String]
 showMap = toList . fmap (concatMap show)
 
-clay = either undefined id . parse rowP ""
+clay = fromJust . parseMaybe rowP
 
 mkMap :: [Coord] -> Map
 mkMap clay = S.fromFunction (1 + maximum (fmap (\(_,_,b) -> b) clay)) (\y -> (Empty <| (S.fromFunction (1 + minimum (fmap (\(_,a,_) -> a) clay) + maximum (fmap (\(_,a,_) -> a) clay)) $ \x -> case find (\(_,a,b) -> a == x && b == y) clay of

@@ -8,12 +8,10 @@ import           Data.Maybe                           (fromJust, fromMaybe)
 import qualified Data.Sequence                        as S
 import           Data.Sequence                        (Seq ((:<|), (:|>)), (<|), (|>))
 import           Data.Tuple.Extra                     (both)
-import           Text.Parsec                          (many, many1, optional,
-                                                       parse, (<|>))
-import           Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import           Text.Parsec.Combinator               (between, sepBy)
-import           Text.ParserCombinators.Parsec.Number (int)
+import Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parseMaybe, try, (<|>))
+import Text.Megaparsec.Char       (char, letterChar, space, string)
+import Text.Megaparsec.Char.Lexer (decimal, signed)
 
 input = lines <$> readFile "input/input12.txt"
 
@@ -24,11 +22,15 @@ data Pot = Pot {
     state :: State
 } deriving (Show, Eq)
 
+
+type Parser = Parsec () String
+
+potP :: Parser Char
 potP = char '.' <|> char '#'
 
 initialStateP = string "initial state: " *> many potP
 
-initialState = fmap (uncurry Pot) . zip [0..] . either undefined id . parse initialStateP ""
+initialState = fmap (uncurry Pot) . zip [0..] . fromJust . parseMaybe initialStateP
 
 data Note = Note {
     ll :: State,
@@ -41,7 +43,7 @@ data Note = Note {
 
 noteP = Note <$> potP <*> potP <*> potP <*> potP <*> potP <*> (string " => " *> potP)
 
-note = either undefined id . parse noteP ""
+note = fromJust . parseMaybe noteP
 
 valueOfFirst pots = num (fromJust $ S.lookup 0 pots)
 valueOfLast pots = num (fromJust $ S.lookup (length pots - 1) pots)

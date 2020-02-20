@@ -7,9 +7,10 @@ import Data.Function              (on)
 import Data.List                  (find, group, maximumBy, minimumBy,
                                              nub, null, sort)
 import Data.List.Extra            (minimumOn)
+import Data.Maybe (fromJust)
 import Data.Tuple.Extra           (both, first, second)
 import Text.Megaparsec            (Parsec, anySingleBut, many,
-                                             optional, parse, try, (<|>))
+                                             optional, parseMaybe, try, (<|>))
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum.VarArg               ( (...) )
@@ -25,7 +26,7 @@ coordinateP :: Parser Coordinate
 coordinateP = (,) <$> (decimal <* string ", ") <*> decimal
 
 coordinate :: String -> Coordinate
-coordinate = either undefined id . parse coordinateP ""
+coordinate = fromJust . parseMaybe coordinateP
 
 manhattan :: Coordinate -> Coordinate -> Int
 --manhattan (x1,y1) (x2,y2) = abs (x1-x2) + abs (y1-y2)
@@ -35,22 +36,23 @@ relevantWorld :: [Coordinate] -> (Coordinate, Coordinate)
 --relevantWorld = (minimum . fmap fst &&& minimum . fmap snd) &&& (maximum . fmap fst &&& maximum . fmap snd)
 relevantWorld = (,) <$> both minimum . unzip <*> both maximum . unzip
 
-comparators :: (Int, Int) -> (Int, Int) -> (Int -> Int -> Bool)
-comparators = (\a b c d -> (||) ... (||) ... (||) <$$>>>> a ... arg1 <*< b ... arg1 <*< c ... arg2 <*< d ... arg2) <$$>>>>
-                            (==) . fst ... arg1
-                        <*< (==) . fst ... arg2
-                        <*< (==) . snd ... arg1
-                        <*< (==) . snd ... arg2
+-- "simple and easy" way to say: x==x1||x==x2||y==y1||y==y2
+comparators :: (Int, Int) -> (Int, Int) -> Int -> Int -> Bool
+comparators = (||) ... (||) ... (||) <$$$$>>>> ((==) <$$$$>> arg43 <*< fst ... arg41) <*<
+                                               ((==) <$$$$>> arg43 <*< fst ... arg42) <*<
+                                               ((==) <$$$$>> arg44 <*< snd ... arg41) <*<
+                                               ((==) <$$$$>> arg44 <*< snd ... arg42)
 
 allRelevantCoordinates :: Coordinate -> Coordinate -> [(Coordinate, Bool)]
 --allRelevantCoordinates (x1,y1) (x2,y2) = [((x,y),x==x1||x==x2||y==y1||y==y2) | x <- [x1..x2], y <- [y1..y2]]
+-- ugh, too difficult...
 allRelevantCoordinates = liftA2 . ((,) <$$>> (,) <*<) <$$>>> comparators <*< enumFromTo `oN` fst <*< enumFromTo `oN` snd
 
 pairwiseDistancesTo :: [Coordinate] -> [(Coordinate, Bool)] -> [([Int], Bool)]
 pairwiseDistancesTo = fmap . first . (. manhattan) . flip fmap -- aaargh...
 
 removeElements :: [Int] -> [(Int, Bool)] -> [(Int, Bool)]
-removeElements = filter . ( . fst) . flip notElem -- aaargh...
+removeElements = filter . (. fst) . flip notElem -- aaargh...
 
 havingExactMinimum :: ([Int], Bool) -> Bool
 havingExactMinimum = ((== 1) . length) . head . group . sort . fst

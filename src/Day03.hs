@@ -9,16 +9,12 @@ import Data.Maybe                 (fromJust)
 import Data.Profunctor
 import Data.Set                   as Set (fromList, notMember)
 import Data.Tuple.Extra           (snd3, thd3)
-import Text.Megaparsec            (Parsec, many, optional, parse, try,
+import Text.Megaparsec            (Parsec, many, optional, parseMaybe, try,
                                              (<|>))
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum ((...))
 import Util
-
-
-
-
 
 
 input = fmap claim . lines <$> readFile "input/input03.txt"
@@ -34,20 +30,20 @@ data Claim = Claim {
 type Parser = Parsec () String
 
 claimP :: Parser Claim
-claimP = Claim <$> (char '#' *> decimal)
+claimP = Claim <$> (char   '#'   *> decimal)
                <*> (string " @ " *> decimal)
-               <*> (char ',' *> decimal)
-               <*> (string ": " *> decimal)
-               <*> (char 'x' *> decimal)
+               <*> (char   ','   *> decimal)
+               <*> (string ": "  *> decimal)
+               <*> (char   'x'   *> decimal)
 
 claim :: String -> Claim
-claim = either undefined id . parse claimP ""
+claim = fromJust . parseMaybe claimP
 
 range :: Int -- amount
       -> Int -- start
       -> [Int]
 -- range = flip (dove take) enumFrom
-range = take <$>> id <*< enumFrom
+range = take <&>> id <*< enumFrom
 
 allPairs :: [Int] -> [Int] -> [(Int, Int)]
 allPairs = liftA2 (,) -- Like: lift the tuple constructor to work with lists, using the applicative effect (which happens to be cartesian product)
@@ -82,7 +78,7 @@ claimIdsOfInchesWithClaims :: (Int -> Bool) -> [IdsAndInches] -> [Int]
 --claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length)
 --claimIdsOfInchesWithClaims = (claimIds .) . filter . (. length)
 --claimIdsOfInchesWithClaims = dimap (. length) (claimIds .) filter   -- profunctor!
-claimIdsOfInchesWithClaims =  claimIds ... filter . (. length)
+claimIdsOfInchesWithClaims =  claimIds ... filter . (. length)  -- ... is function composition, but for functions >= 2 arguments
 -- Think about it like this: We modify the filter function so, that
 -- 1) we transform its input (the predicate) with length
 -- 2) we transform its output (function from list to list) with claimIds

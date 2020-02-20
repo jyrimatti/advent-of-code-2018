@@ -20,7 +20,7 @@ import Data.Profunctor                ( rmap )
 import Data.Tuple                 (swap)
 import Data.Tuple.Extra           (both, first, second)
 import Text.Megaparsec            (Parsec, anySingleBut, many,
-                                             optional, parse, try, (<|>))
+                                             optional, parseMaybe, try, (<|>))
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum ((...))
@@ -55,10 +55,10 @@ eventP = ( (,BeginShift) . Just <$> (string "Guard #" *> decimal <* string " beg
          ( (Nothing,WakeUp)     <$ string "wakes up" )
 
 record :: String -> Record
-record = either undefined id . parse recordP ""
+record = fromJust . parseMaybe recordP
 
 withPreviousGuardIfMissing :: [Record] -> Record -> Record
-withPreviousGuardIfMissing = over guard <$>> flip (<|>) . _guard . head <*< id
+withPreviousGuardIfMissing = over guard <&>> flip (<|>) . _guard . head <*< id
 
 withGuardId :: [Record] -> Record -> [Record]
 withGuardId = (:) <$$>> withPreviousGuardIfMissing <*< arg1
@@ -70,7 +70,7 @@ guardsMatch :: Maybe GuardId -> Maybe GuardId -> Bool
 guardsMatch = (&&) <$$>> (==) <*< (&&) `oN` isJust -- `on` but with higher fixity
 
 eventsMatch :: Event -> Event -> Bool
-eventsMatch = (&&) <$>> (== FallAsleep) <*< (== WakeUp)
+eventsMatch = (&&) <&>> (== FallAsleep) <*< (== WakeUp)
 
 recordsMatch :: Record -> Record -> Bool
 recordsMatch = (&&) <$$>> guardsMatch `oN` _guard <*< eventsMatch `oN` _event
@@ -79,14 +79,14 @@ minutesForGuard :: Record -> Record -> (GuardId, (Int, Int))
 minutesForGuard = (,) <$$>> fromJust . _guard ... arg1 <*< (,) `oN` _minute
 
 newElement :: Record -> Record -> [(GuardId, (Int, Int))]
-newElement = if' <$$>>> recordsMatch <*< singleton ... minutesForGuard <*< const2 [] -- ... is function composition, but for functions >= 2 arguments
+newElement = if' <$$>>> recordsMatch <*< singleton ... minutesForGuard <*< const2 []
 -- if' is the familiar 'if' expression, but as a regular function
 
 collectAsleepMinutes :: (Record, Record) -> [(GuardId, (Int, Int))] -> [(GuardId, (Int, Int))]
 --collectAsleepMinutes (Record m1 (Just g1) FallAsleep, Record m2 (Just g2) WakeUp) xs | g1 == g2 = (g1,(m1,m2)) : xs
 --collectAsleepMinutes _ xs = xs
 --collectAsleepMinutes xs = \case (Record m1 (Just g1) FallAsleep, Record m2 (Just g2) WakeUp) | g1 == g2 -> (g1,(m1,m2)) : xs; _ -> xs
-collectAsleepMinutes = (<>) <$>> uncurry newElement <*< id
+collectAsleepMinutes = (<>) <&>> uncurry newElement <*< id
 
 pairwise :: [a] -> [(a, a)]
 pairwise = zip <$> id <*> tail

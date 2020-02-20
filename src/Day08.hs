@@ -1,12 +1,17 @@
 module Day08 where
 
-import Text.Parsec                          (Parsec, count, many,
-                                                       many1, optional, parse)
-import Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import Text.Parsec.Combinator               (between, sepBy)
-import Text.ParserCombinators.Parsec.Number (int)
-
+import Control.Applicative (liftA2)
+import Control.Applicative.Combinators (count)
+import Control.Category ((<<<))
+import Control.Conditional (if')
+import Control.Monad ((<=<))
+import Data.Maybe (fromJust)
+import Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parseMaybe, try, (<|>))
+import Text.Megaparsec.Char       (char, letterChar, space, string)
+import Text.Megaparsec.Char.Lexer (decimal, signed)
+import Universum.VarArg ((...))
+import Util
 
 input = readFile "input/input08.txt"
 
@@ -20,24 +25,44 @@ data Node = Node {
     metadata :: [Int]
 } deriving Show
 
-headerP = Header <$> (optional (char ' ') *> int <* char ' ') <*> int
+type Parser = Parsec () String
 
-metadataP = char ' ' *> int
+headerP :: Parser Header
+headerP = Header <$> (optional (char ' ') *> decimal <* char ' ') <*> decimal
 
-nodeP = do
-    Header c m <- headerP
-    children <- count c nodeP
-    metadata <- count m metadataP
-    pure $ Node children metadata
+metadataP :: Parser Int
+metadataP = char ' ' *> decimal
 
-tree = either undefined id . parse nodeP ""
+nodeP :: Parser Node
+--nodeP = do
+--    Header c m <- headerP
+--    children <- count c nodeP
+--    metadata <- count m metadataP
+--    pure $ Node children metadata
+nodeP = headerP >>= (liftA2 Node <$> ($ nodeP) . count . childNodes <*> ($ metadataP) . count . metadataNodes)
 
-sumMetadata (Node children metadata) = sum metadata + sum (sumMetadata <$> children)
+tree :: String -> Node
+tree = fromJust . parseMaybe nodeP
+
+sumMetadata :: Node -> Int
+sumMetadata = (+) `oN` sum <$> fmap sumMetadata . children <*> metadata
 
 solve1 = sumMetadata . tree
 
+value :: Node -> Int
 value (Node [] metadata)       = sum metadata
 value (Node children metadata) = (sum . fmap (value . (\m -> children !! (m-1))) . filter (\m -> m > 0 && m <= length children)) metadata
+
+value2 :: Node -> Int
+value2 = sum . (if' <$> null . children
+                    <*> metadata
+                    <*> ( ((.) <$> mapToValueOfReferredChild <*> metadataEntriesReferringToChild) <$> children <*> metadata ))
+
+mapToValueOfReferredChild :: [Node] -> [Int] -> [Int]
+mapToValueOfReferredChild = fmap . (value ... (!!) <&>> id <*< pred)
+
+metadataEntriesReferringToChild :: [a] -> [Int] -> [Int]
+metadataEntriesReferringToChild = filter . ((&&) <$$>> (> 0) ... arg2 <*< flip (<=) . length)
 
 solve2 = value . tree
 

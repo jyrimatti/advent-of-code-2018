@@ -4,6 +4,7 @@
 {-# LANGUAGE TupleSections         #-}
 module Day16 where
 
+import           Control.Applicative.Combinators (count, between, sepBy)
 import           Control.Arrow                        ((&&&))
 import           Data.Bifunctor                       (bimap)
 import           Data.Bits                            ((.&.), (.|.))
@@ -19,23 +20,26 @@ import           Data.Ord                             (comparing)
 import qualified Data.Sequence                        as S
 import           Data.Sequence                        (Seq)
 import           Numeric.Natural
-import           Text.Parsec                          (many, many1, optional,
-                                                       parse, (<|>))
-import           Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import           Text.Parsec.Combinator               (between, sepBy)
-import           Text.ParserCombinators.Parsec.Number (int)
+import           Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char       (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
 
 
 input = lines <$> readFile  "input/input16.txt"
 input2 = lines <$> readFile  "input/input16_2.txt"
 
-foo txt = string txt *> between (char '[') (char ']') (int `sepBy` string ", ")
+type Parser = Parsec () String
+
+foo :: String -> Parser [Integer]
+foo txt = string txt *> between (char '[') (char ']') (decimal `sepBy` string ", ")
 beforeP = S.fromList . fmap Register <$> foo "Before: "
 afterP = S.fromList . fmap Register <$> foo "After:  "
-instrP = (,,,) <$> (int <* char ' ') <*> (int <* char ' ') <*> (int <* char ' ') <*> int
 
-ps p = either undefined id . parse p ""
+instrP :: Parser (Int, Integer, Integer, Integer)
+instrP = (,,,) <$> (decimal <* char ' ') <*> (decimal <* char ' ') <*> (decimal <* char ' ') <*> decimal
+
+ps p = fromJust . parseMaybe p
 before = ps beforeP
 after = ps afterP
 instr = ps instrP

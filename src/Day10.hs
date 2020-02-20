@@ -1,18 +1,18 @@
 module Day10 where
 
+import Control.Applicative.Combinators (count)
 import Control.Arrow                        ((&&&))
 import Data.Function                        (on)
 import Data.List                            (groupBy, nub, sort,
                                                        sortBy)
 import Data.List.Extra                      (groupOn, groupSortBy)
+import Data.Maybe (fromJust)
 import Data.Tuple                           (swap)
 import Data.Tuple.Extra                     (first)
-import Text.Parsec                          (many, many1, optional,
-                                                       parse)
-import Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import Text.Parsec.Combinator               (between, sepBy)
-import Text.ParserCombinators.Parsec.Number (int)
+import Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parseMaybe, try, (<|>))
+import Text.Megaparsec.Char       (char, letterChar, space, string)
+import Text.Megaparsec.Char.Lexer (decimal, signed)
 
 
 input = lines <$> readFile "input/input10.txt"
@@ -25,11 +25,14 @@ data Point = Point {
 instance Semigroup Point where
     Point (x,y) _ <> Point _ (vx,vy) = Point (x+vx,y+vy) (vx,vy)
 
-coordinateP = (,) <$> (many (char ' ') *> int <* char ',') <*> (many (char ' ') *> int)
+type Parser = Parsec () String
 
+coordinateP = (,) <$> (many (char ' ') *> signed space decimal <* char ',') <*> (many (char ' ') *> signed space decimal)
+
+pointP :: Parser Point
 pointP = Point <$> (string "position=<" *> coordinateP) <*> (string "> velocity=<" *> coordinateP) <* char '>'
 
-point = either undefined id . parse pointP ""
+point = fromJust . parseMaybe pointP
 
 horizontalVariance = length . nub . sort . fmap (fst . position)
 

@@ -26,12 +26,6 @@ import           Data.Vector                          (Vector)
 import           Prelude                              hiding
                                                        (Either (Left, Right),
                                                        round)
-import           Text.Parsec                          (many, many1, optional,
-                                                       parse, (<|>))
-import           Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import           Text.Parsec.Combinator               (between, sepBy)
-import           Text.ParserCombinators.Parsec.Number (int)
 
 
 inputLines = fmap lines . readFile 

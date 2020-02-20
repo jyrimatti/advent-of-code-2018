@@ -17,12 +17,6 @@ import qualified Data.Vector                          as V
 import           Data.Vector                          (Vector)
 import           Prelude                              hiding
                                                        (Either (Left, Right))
-import           Text.Parsec                          (many, many1, optional,
-                                                       parse, (<|>))
-import           Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import           Text.Parsec.Combinator               (between, sepBy)
-import           Text.ParserCombinators.Parsec.Number (int)
 
 
 input = lines <$> readFile "input/input13.txt"

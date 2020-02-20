@@ -29,5 +29,6 @@ Executable Main
       data-aviary,
       lens,
       profunctors,
-      universum
+      universum,
+      composition
   ghc-options: -O3 -fno-warn-missing-signatures

@@ -1,66 +1,98 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Day09 where
 
+import           Control.Applicative.Combinators (count)
 import           Control.Arrow                        ((&&&))
+import           Control.Conditional (if')
+import           Control.Lens hiding ((...),index)
 import           Data.List                            (iterate')
-import           Data.Maybe                           (fromJust)
+import           Data.Maybe (fromJust)
 import qualified Data.Sequence                        as S
+import           Data.Tuple.Extra (uncurry3)
 import           Prelude                              hiding (round)
-import           Text.Parsec                          (many, many1, optional,
-                                                       parse)
-import           Text.Parsec.Char                     (anyChar, char, digit,
-                                                       letter, space, string)
-import           Text.Parsec.Combinator               (between, sepBy)
-import           Text.ParserCombinators.Parsec.Number (int)
-
+import           Text.Megaparsec            (Parsec, anySingle, many, optional,
+                                             parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char       (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum.VarArg ((...))
+import           Util
 
 input = readFile "input/input09.txt"
 
 data Game = Game {
-    players :: Int,
-    rounds :: Int,
+    _players :: Int,
+    _rounds  :: Int,
 
-    marbles :: S.Seq Int,
-    round :: Int,
-    index :: Int,
-    player :: Int,
-    scores :: S.Seq Int
+    _marbles :: S.Seq Int,
+    _round   :: Int,
+    _index   :: Int,
+    _player  :: Int,
+    _scores  :: S.Seq Int
 } deriving Show
 
-gameP = (\p r -> Game p r S.empty 0 0 0 (S.replicate p 0)) <$> (int <* string " players; last marble is worth ") <*> (int <* string " points")
+makeLenses ''Game
 
-game = either undefined id . parse gameP ""
+gameP :: Parser Game
+gameP = ( ($ 0) . ($ 0) . ($ 0) . ($ S.empty) <$$>> Game <*< flip S.replicate 0 ... arg1 ) <$> (decimal <* string " players; last marble is worth ")
+                                                                                           <*> (decimal <* string " points")
 
-isSpecial 0     = False
-isSpecial round = round `rem` 23 == 0
+type Parser = Parsec () String
 
+game :: String -> Game
+game = fromJust . parseMaybe gameP
+
+isSpecial :: Int -> Bool
+isSpecial = (&&) <$> (/= 0) <*> (== 0) . (`rem` 23)
+
+newIndex :: Game -> Int
 newIndex (Game _ _ marbles _     _     _ _) | S.length marbles == 0         = 0
 newIndex (Game _ _ marbles _     _     _ _) | S.length marbles == 1         = 1
-newIndex (Game _ _ marbles round index _ _) | isSpecial round               = (S.length marbles + index - 7) `rem` S.length marbles
+newIndex (Game _ _ marbles round index _ _) | isSpecial round               = (S.length marbles + index - 7) `rem` S.length marbles
 newIndex (Game _ _ marbles _     index _ _) | index == S.length marbles - 2 = S.length marbles
 newIndex (Game _ _ marbles _     index _ _)                                 = (index + 2) `rem` S.length marbles
 
-getScore = fromJust . uncurry S.lookup . (newIndex &&& marbles)
+getScore :: Game -> Int
+getScore = (+) <$> _round <*> (fromJust ... S.lookup <$> newIndex <*> _marbles)
 
-step g | isSpecial (round g) = g {
+nextPlayer :: Game -> Int
+nextPlayer = rem <$> (+1) . _player <*> _players
+
+updateCurrentPlayerScore :: Game -> S.Seq Int
+updateCurrentPlayerScore = S.adjust' <$> (+) . getScore <*> _player <*> _scores
+
+updateMarbles :: Int {-newIndex-} -> Game -> S.Seq Int
+updateMarbles = uncurry <&>> S.insertAt <*< (_round &&& _marbles)
+
+step :: Game -> Game
+{-step g | isSpecial (round g) = g {
   marbles = S.deleteAt (newIndex g) (marbles g),
   round = round g + 1,
   index = newIndex g,
-  player = (player g + 1) `rem` players g,
-  scores = S.adjust' (\score -> score + round g + getScore g) (player g) (scores g)
+  player = nextPlayer g,
+  scores = updateCurrentPlayerScore g
 }
 step g = g {
   marbles = S.insertAt (newIndex g) (round g) (marbles g),
   round   = round g + 1,
   index   = newIndex g,
-  player  = (player g + 1) `rem` players g
-}
+  player  = nextPlayer g
+}-}
+step = over round succ .
+       (set player <$> nextPlayer <*> id) .
+       (((.) <$> set index
+             <*> (if' <$$>>> isSpecial . _round ... arg2
+                         <*< ((.) <$> over marbles . S.deleteAt
+                                  <*> (set scores <$> updateCurrentPlayerScore <*> id) ... arg2 )
+                         <*< (set marbles <$$>> updateMarbles <*< arg2)
+                 )
+        ) <$> newIndex <*> id)
 
-solve1 = maximum . scores . head . dropWhile (\g -> round g <= rounds g) . iterate' step
+solve1 = maximum . _scores . head . dropWhile ((<=) <$> _round <*> _rounds) . iterate' step
 
 -- What is the winning Elf's score?
 solution1 = solve1 . game <$> input
 -- 371284
 
 -- What would the new winning Elf's score be if the number of the last marble were 100 times larger?
-solution2 = solve1 . (\g -> g { rounds = rounds g * 100 }) . game <$> input
+solution2 = solve1 . over rounds (*100) . game <$> input
 -- 3038972494
