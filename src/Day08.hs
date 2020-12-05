@@ -54,9 +54,9 @@ value (Node [] metadata)       = sum metadata
 value (Node children metadata) = (sum . fmap (value . (\m -> children !! (m-1))) . filter (\m -> m > 0 && m <= length children)) metadata
 
 value2 :: Node -> Int
-value2 = sum . (if' <$> null . children
-                    <*> metadata
-                    <*> ( ((.) <$> mapToValueOfReferredChild <*> metadataEntriesReferringToChild) <$> children <*> metadata ))
+value2 = sum ... if' <$> null . children
+                     <*> metadata
+                     <*> ( ((.) <$> mapToValueOfReferredChild <*> metadataEntriesReferringToChild) <$> children <*> metadata )
 
 mapToValueOfReferredChild :: [Node] -> [Int] -> [Int]
 mapToValueOfReferredChild = fmap . (value ... (!!) <&>> id <*< pred)

@@ -79,7 +79,9 @@ minutesForGuard :: Record -> Record -> (GuardId, (Int, Int))
 minutesForGuard = (,) <$$>> fromJust . _guard ... arg1 <*< (,) `oN` _minute
 
 newElement :: Record -> Record -> [(GuardId, (Int, Int))]
-newElement = if' <$$>>> recordsMatch <*< singleton ... minutesForGuard <*< const2 []
+newElement = if' <$$>>> recordsMatch
+                    <*< singleton ... minutesForGuard
+                    <*< const2 []
 -- if' is the familiar 'if' expression, but as a regular function
 
 collectAsleepMinutes :: (Record, Record) -> [(GuardId, (Int, Int))] -> [(GuardId, (Int, Int))]

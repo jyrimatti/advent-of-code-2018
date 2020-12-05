@@ -30,5 +30,6 @@ Executable Main
       lens,
       profunctors,
       universum,
-      composition
+      composition,
+      data-foldapp
   ghc-options: -O3 -fno-warn-missing-signatures

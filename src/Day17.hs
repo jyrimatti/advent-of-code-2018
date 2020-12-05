@@ -1,37 +1,49 @@
 {-# LANGUAGE TupleSections #-}
 module Day17 where
 
+import           Control.Applicative (liftA2)
 import           Control.Applicative.Combinators (count, between, sepBy, optional)
 import           Control.Arrow                        ((&&&))
-import           Data.Bifunctor                       (first, second)
+import           Control.Conditional (if')
+import           Data.Bifunctor                       (first, second, bimap)
 import           Data.Foldable                        (toList)
+import           Data.FoldApp (allOf, foldOf)
 import           Data.List                            (concatMap, find, nub,
                                                        sortOn)
 import           Data.Maybe                           (fromJust, isJust,
                                                        isNothing)
 import qualified Data.Sequence                        as S
 import           Data.Sequence                        (Seq, (<|), (|>))
+import           Data.Tuple.Extra (both, fst3, snd3, thd3)
 import           Text.Megaparsec            (Parsec, anySingle, many, optional,
                                              parseMaybe, try, (<|>))
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum.VarArg ((...))
+import           Util
 
-
+input :: IO [String]
 input = lines <$> readFile  "input/input17.txt"
 
 type Parser = Parsec () String
 
-coordOrRangeP = (\c start mend -> (c, maybe [start] (\e -> [start..e]) mend)) <$> (char 'x' <|> char 'y') <*> (char '=' *> decimal) <*> optional (string ".." *> decimal)
+build :: a -> Int -> Maybe Int -> (a, [Int])
+build = (,) <$$$>> arg31 <*< argDrop (maybe <$$>>> singleton ... arg1
+                                               <*< enumFromTo ... arg1
+                                               <*< arg2)
+
+coordOrRangeP :: Parser (Char, [Int])
+coordOrRangeP = build <$> (char 'x' <|> char 'y') <*> (char '=' *> decimal) <*> optional (string ".." *> decimal)
 
 rowP :: Parser [Coord]
-rowP = (\[xs,ys] -> [(Clay,x,y) | x <- xs, y <- ys]) . fmap snd . sortOn fst <$> coordOrRangeP `sepBy` string ", "
+rowP = (liftA2 (Clay,,) <$> head <*> last) . fmap snd . sortOn fst <$> coordOrRangeP `sepBy` string ", "
 
 data Substance = Spring | Empty | Clay | Water | Retained deriving Eq
 instance Show Substance where
-  show Spring = "+"
-  show Empty = "."
-  show Clay = "#"
-  show Water = "|"
+  show Spring   = "+"
+  show Empty    = "."
+  show Clay     = "#"
+  show Water    = "|"
   show Retained = "~"
 
 type Coord = (Substance,Int,Int)
@@ -40,63 +52,121 @@ type Map = Seq (Seq Substance)
 showMap :: Map -> [String]
 showMap = toList . fmap (concatMap show)
 
+clay :: String -> [Coord]
 clay = fromJust . parseMaybe rowP
 
+foo :: Int -> Int -> [Coord] -> Maybe Coord
+foo = find ...$$ ((&&) <$$$>> ((==) <$$$>> arg31 <*< snd3 ... arg33)
+                          <*< ((==) <$$$>> arg32 <*< thd3 ... arg33))
+
+qux :: Int -> Int -> [Coord] -> Substance
+qux = maybe Empty fst3 ... foo
+
+middle :: [Coord] -> Int -> Seq Substance
+middle = S.fromFunction <$$>> succ . ((+) <$> minimum <*> maximum) . fmap snd3 ... arg1
+                          <*< flip (flip . flip qux) -- (\a b c -> qux c b a)
+
 mkMap :: [Coord] -> Map
-mkMap clay = S.fromFunction (1 + maximum (fmap (\(_,_,b) -> b) clay)) (\y -> (Empty <| (S.fromFunction (1 + minimum (fmap (\(_,a,_) -> a) clay) + maximum (fmap (\(_,a,_) -> a) clay)) $ \x -> case find (\(_,a,b) -> a == x && b == y) clay of
-  Just (s,_,_) -> s
-  Nothing      -> Empty)) |> Empty)
+mkMap = S.fromFunction <$> succ . maximum . fmap thd3
+                       <*> (|> Empty) . (Empty <|) ... middle
 
-down (x,y) = (x,y+1)
-left (x,y) = (x-1,y)
-right (x,y) = (x+1,y)
+down :: (Int, Int) -> (Int, Int)
+down = second succ
 
+left :: (Int, Int) -> (Int, Int)
+left = first pred
+
+right :: (Int, Int) -> (Int, Int)
+right = first succ
+
+height :: Seq a -> Int
 height = length
+
+width :: Map -> Int
 width = S.length . flip S.index 0
 
-(!) map (x,y) = ((`S.index ` x) . (`S.index` y)) map
+substance :: (Int, Int) -> Map -> Substance
+substance = uncurry $ (.) <&>> flip S.index <*< flip S.index
 
-set v (x,y) = S.adjust' (S.update x v) y
+set :: (Int, Int) -> Substance -> Map -> Map
+set = S.adjust' <$$>> S.update . fst
+                  <*< const . snd
 
-isBetween _ Nothing _ = False
-isBetween _ _ Nothing = False
-isBetween x (Just a) (Just b) = a <= x && x <= b
+wetLeft :: (Int, Int) -> Map -> Bool
+wetLeft = (||) <$$>> (== Clay) ... substance
+                 <*< (allOf <$$>>> (`elem` [Water,Retained]) ... substance
+                               <*< (>0) . fst ... arg1
+                               <*< wetLeft . left)
 
-wetLeft  c map = map ! c == Clay || (map ! c `elem` [Water,Retained] && fst c > 0 && wetLeft (left c) map)
-wetRight c map = map ! c == Clay || (map ! c `elem` [Water,Retained] && fst c < (width map - 1) && wetRight (right c) map)
+wetRight :: (Int, Int) -> Map -> Bool
+wetRight = (||) <$$>> (== Clay) ... substance
+                 <*< (allOf <$$>>> (`elem` [Water,Retained]) ... substance
+                               <*< ((<) <&>> fst <*< pred . width)
+                               <*< wetRight .right)
 
-retainLeft c map | map ! c == Clay = map
-retainLeft c map                   = retainLeft (left c) $ set Retained c map
+retainLeft :: (Int, Int) -> Map -> Map
+retainLeft = if' <$$>>> (== Clay) ... substance
+                    <*< arg2
+                    <*< (retainLeft <$$>> left ... arg1 <*< (`set` Retained))
 
-retainRight c map | map ! c == Clay = map
-retainRight c map                   = retainRight (right c) $ set Retained c map
+retainRight :: (Int, Int) -> Map -> Map
+retainRight = if' <$$>>> (== Clay) ... substance
+                    <*< arg2
+                    <*< (retainRight <$$>> right ... arg1 <*< (`set` Retained))
 
 watery :: (Int,Int) -> Map -> Map
-watery c@(_,y) map | y < 0 || y >= height map = map
-watery c@(_,y) map | y < 0 || y == height map - 1 = set Water c map
-watery c@(x,_) map | x < 0 || x >= width  map = map
-watery c       map | map ! c == Spring       = watery (down c) map
-watery c       map | map ! c == Clay         = map
-watery c       map | map ! c == Water        = map
-watery c       map | map ! c == Retained     = map
-watery c       map                           = let
-  foo  = map
-  bar  = if snd (down c) < height foo && foo ! down c == Empty then watery (down c) foo else foo
-  baz  = if snd (down c) < height bar && bar ! down c `elem` [Water,Retained,Clay] then set Water c bar else bar
-  quux =  if snd (down c) < height foo && (baz ! down c == Clay || (wetLeft (down c) baz && wetRight (down c) baz))
-          then watery (left c) $ watery (right c) baz
-          else baz
- in
-  if wetLeft c quux && wetRight c quux then retainLeft c (retainRight c quux) else quux
+watery = if' <$$>>> ((||) <$$>> (<0) . snd ... arg1 <*< ( (>=) <&>> snd <*< height))
+                <*< arg2 $
+         if' <$$>>> ((||) <$$>> (<0) . snd ... arg1 <*< ( (==) <&>> snd <*< pred . height))
+                <*< flip set Water $
+         if' <$$>>> ((||) <$$>> (<0) . fst ... arg1 <*< ( (>=) <&>> fst <*< width))
+                <*< arg2 $
+         if' <$$>>> (== Spring) ... substance
+                <*< watery . down $
+         if' <$$>>> (`elem` [Clay, Water, Retained]) ... substance
+                <*< arg2
+                <*< (blah <$$>> arg1 <*< (quux <$$>> arg1 <*< (baz <$$>> arg1 <*< bar)))
 
-stripLeft = fmap . first <$> flip (-) . minimum . fmap (\(_,x,_) -> x) <*> id
+blah :: (Int, Int) -> Map -> Map
+blah = if' <$$>>> ((&&) <$$>> wetLeft <*< wetRight)
+              <*< (retainLeft <$$>> arg1 <*< retainRight)
+              <*< arg2
 
+bar :: (Int, Int) -> Map -> Map
+bar = if' <$$>>> ((&&) <$$>> verticallyInside
+                         <*< (== Empty) ... substance . down)
+             <*< watery . down
+             <*< arg2
+
+baz :: (Int, Int) -> Map -> Map
+baz = if' <$$>>> ((&&) <$$>> verticallyInside
+                         <*< ((`elem` [Water,Retained,Clay]) ... substance . down))
+             <*< flip set Water
+             <*< arg2
+
+quux :: (Int, Int) -> Map -> Map
+quux = if' <$$>>> ((&&) <$$>> verticallyInside
+                          <*< ( (||) <$$>> (== Clay) ... substance . down
+                                       <*< ( (&&) <$$>> wetLeft . down <*< wetRight . down)))
+              <*< (watery <$$>> left ... arg1 <*< watery . right)
+              <*< arg2
+
+verticallyInside :: (Int, Int) -> Seq a -> Bool
+verticallyInside = (<=) <&>> snd <*< height
+
+stripLeft :: [Coord] -> [Coord]
+stripLeft = fmap . first <$> flip (-) . minimum . fmap snd3 <*> id
+
+findSpring :: Map -> (Int, Int)
 findSpring = (,0) . fromJust . S.findIndexL (== Spring) . (`S.index` 0)
 
-process = uncurry watery . (findSpring &&& id) . mkMap . stripLeft . ((Spring,500,0) :) . concatMap clay
+process :: [String] -> Map
+process = (watery <$> findSpring <*> id) . mkMap . stripLeft . ((Spring,500,0) :) . concatMap clay
 
+solve :: [String] -> Map
 solve = fmap snd . S.dropWhileL (isNothing . fst) . fmap (S.findIndexL (== Clay) &&& id) . process
 
+solve1 :: [String] -> Int
 solve1 = sum . fmap (length . S.findIndicesL (`elem` [Water,Retained])) . solve
 
 -- How many tiles can the water reach

@@ -1,9 +1,11 @@
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TupleSections         #-}
 module Day19 where
 import           Control.Applicative.Combinators (count, between, sepBy, optional)
 import           Control.Arrow                        (second, (&&&))
+import           Control.Conditional (if')
 import           Data.Bifunctor                       (bimap)
 import           Data.Bits                            ((.&.), (.|.))
 import           Data.Function                        (on)
@@ -17,6 +19,7 @@ import           Data.Maybe                           (catMaybes, fromJust,
 import           Data.Ord                             (comparing)
 import qualified Data.Sequence                        as S
 import           Data.Sequence                        (Seq)
+import           Data.Tuple.Extra (uncurry3)
 import qualified Data.Vector.Unboxed                  as V
 import           Data.Vector.Unboxed                  (Vector)
 import           Numeric.Natural
@@ -24,8 +27,10 @@ import           Text.Megaparsec            (Parsec, anySingle, many, optional,
                                              parseMaybe, try, (<|>))
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum.VarArg ((...))
+import           Util
 
-
+input :: IO [String]
 input = lines <$> readFile  "input/input19.txt"
 
 type Parser = Parsec () String
@@ -36,33 +41,40 @@ ipP = string "#ip " *> decimal
 instrP :: Parser (Opcode,Int,Int,Int)
 instrP = (,,,) <$> (toOpcode <$> many letterChar) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal)
 
-toOpcode "addr" = AddR
-toOpcode "addi" = AddI
-toOpcode "mulr" = MulR
-toOpcode "muli" = MulI
-toOpcode "banr" = BanR
-toOpcode "bani" = BanI
-toOpcode "borr" = BorR
-toOpcode "bori" = BorI
-toOpcode "setr" = SetR
-toOpcode "seti" = SetI
-toOpcode "gtir" = GtIR
-toOpcode "gtri" = GtRI
-toOpcode "gtrr" = GtRR
-toOpcode "eqir" = EqIR
-toOpcode "eqri" = EqRI
-toOpcode "eqrr" = EqRR
+toOpcode :: String -> Opcode
+toOpcode = 
+    if' <$> (== "addr") <*> const AddR <*> (
+    if' <$> (== "addi") <*> const AddI <*> (
+    if' <$> (== "mulr") <*> const MulR <*> (
+    if' <$> (== "muli") <*> const MulI <*> (
+    if' <$> (== "banr") <*> const BanR <*> (
+    if' <$> (== "bani") <*> const BanI <*> (
+    if' <$> (== "borr") <*> const BorR <*> (
+    if' <$> (== "bori") <*> const BorI <*> (
+    if' <$> (== "setr") <*> const SetR <*> (
+    if' <$> (== "seti") <*> const SetI <*> (
+    if' <$> (== "gtir") <*> const GtIR <*> (
+    if' <$> (== "gtri") <*> const GtRI <*> (
+    if' <$> (== "gtrr") <*> const GtRR <*> (
+    if' <$> (== "eqir") <*> const EqIR <*> (
+    if' <$> (== "eqri") <*> const EqRI <*> (
+    if' <$> (== "eqrr") <*> const EqRR <*> undefined)))))))))))))))
 
-ps p = fromJust . parseMaybe p
+ps :: Parser a -> String -> a
+ps = fromJust ... parseMaybe
+
+ip :: String -> Natural
 ip = ps ipP
+
 instr :: String -> (Opcode,Int,Int,Int)
 instr = ps instrP
 
+parseData :: [String] -> (Natural, [(Opcode, Int, Int, Int)])
 parseData = bimap ip (fmap instr) . (head &&& tail)
 
 type Register = Int
 
-data Input = Reg Natural | Val Int
+data Input = Reg { val :: Natural } | Val Int
 
 data Opcode = AddR | AddI |
               MulR | MulI |
@@ -83,8 +95,11 @@ data Instruction = Instruction {
 type Registers = Vector Register
 type Instructions = Seq Instruction
 
+reg :: Int -> Input
 reg = Reg . fromIntegral
 
+-- not gonna make these point-free...
+mkInstruction :: Opcode -> Int -> Int -> Int -> Instruction
 mkInstruction AddR a b c = Instruction AddR (reg a) (reg b) (reg c)
 mkInstruction AddI a b c = Instruction AddI (reg a) (Val b) (reg c)
 mkInstruction MulR a b c = Instruction MulR (reg a) (reg b) (reg c)
@@ -102,20 +117,22 @@ mkInstruction EqIR a b c = Instruction EqIR (Val a) (reg b) (reg c)
 mkInstruction EqRI a b c = Instruction EqRI (reg a) (Val b) (reg c)
 mkInstruction EqRR a b c = Instruction EqRR (reg a) (reg b) (reg c)
 
-mkInstructions = S.fromList . fmap (\(oc,a,b,c) -> mkInstruction oc a b c)
+mkInstructions :: [(Opcode, Int, Int, Int)] -> Seq Instruction
+mkInstructions = S.fromList . fmap (uncurry4 mkInstruction)
 
 
 -- Process
 
 (!) :: Registers -> Natural -> Int
-(!) regs i = regs V.! fromIntegral i
+(!) = (V.!) <&>> id <*< fromIntegral
 
 (!!!) :: Instructions -> Natural -> Instruction
-(!!!) instrs i = S.index instrs (fromIntegral i)
+(!!!) = S.index <&>> id <*< fromIntegral
 
 update' :: Input -> Int -> Registers -> Registers
-update' (Reg i) val = (`V.unsafeUpd` [(fromIntegral i, val)])
+update' = flip V.unsafeUpd . singleton ... (,) <&>> fromIntegral . val <*< id
 
+-- not gonna make these point-free...
 behave :: Instruction -> Registers -> Registers
 behave (Instruction AddR (Reg a) (Reg b) c) regs = update' c (regs ! a + regs !   b) regs
 behave (Instruction AddI (Reg a) (Val b) c) regs = update' c (regs ! a +          b) regs
@@ -136,31 +153,43 @@ behave (Instruction EqRR (Reg a) (Reg b) c) regs = update' c (if regs ! a == reg
 
 type IP = Natural
 
+bar :: Input -> Instructions -> Natural -> Registers -> Registers
+bar = behave <$$$$>> ((!!!) <$$$$>> arg42 <*< arg43)
+                 <*< (update' <$$$$>>> arg41 <*< fromIntegral ... arg43 <*< arg44)
+
 process :: Input -> Seq Instruction -> IP -> Registers -> (IP,Registers)
-process ipReg@(Reg r) instructions ip registers = let
-    instr = instructions !!! ip
-    foo = update' ipReg (fromIntegral ip) registers
-    bar = behave instr foo
-  in
-    (fromIntegral $ (bar ! r) + 1, bar)
+process = ((,) <$$>> fromIntegral . succ ... (!) <*< arg1) <$$$$>> bar <*< val ... arg41
 
-solv regs ipReg instructions = iterate' (uncurry $ process ipReg instructions) (0,regs)
+baz :: Input -> Seq Instruction -> (IP, Registers) -> (IP, Registers)
+baz = uncurry ...$$ process
 
-continues numberOfInstructions = (&&) <$> (>= 0) <*> (< numberOfInstructions)
+solv :: Registers -> Input -> Seq Instruction -> [(IP, Registers)]
+solv = (...$$ baz) . flip iterate' . (0,)
 
+continues :: IP -> IP -> Bool
+continues = (&&) <$$>> (>= 0) ... arg2
+                   <*< flip (<)
+
+getIP :: (a, Seq a1) -> IP
 getIP = fromIntegral . S.length . snd
 
-firstStateAfterHalt regs = (\f -> head . dropWhile (f . fst)) <$> continues . getIP <*> uncurry (solv regs)
+firstStateAfterHalt :: Registers -> (Input, Seq Instruction) -> (IP, Registers)
+firstStateAfterHalt = head ... dropWhile . (. fst) <$$>> continues . getIP ... arg2
+                                                     <*< uncurry . solv
 
-solve regs = (V.! 0) . snd . firstStateAfterHalt (V.fromList regs) . bimap Reg mkInstructions . parseData
+solve :: [Register] -> [String] -> Register
+solve = (V.! 0) . snd ... firstStateAfterHalt <&>> V.fromList
+                                               <*< bimap Reg mkInstructions . parseData
 
 -- What value is left in register 0
 solution1 = solve [0,0,0,0,0,0] <$> input
 -- 948
 
-factors n = [x | x <- [1..n], n `mod` x == 0]
+factors :: Int -> [Int]
+factors = filter <$> (== 0) ... mod <*> enumFromTo 1
 
 -- seems to be factorization, and the number to factorize is initialized to reg 4
+solve2 :: [String] -> Int
 solve2 = sum . factors . (! 4) . snd . (!! 100) . uncurry (solv (V.fromList [1,0,0,0,0,0])) . bimap Reg mkInstructions . parseData
 
 -- this time, register 0 started with the value 1. What value is left in register 0

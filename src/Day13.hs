@@ -1,50 +1,72 @@
-{-# LANGUAGE LambdaCase    #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections   #-}
 module Day13 where
 
 import           Control.Arrow                        ((&&&))
+import           Control.Conditional (if')
+import           Control.Lens hiding ((...),index,(<|),(|>),transform,both,anyOf,allOf)
 import           Data.Bifunctor                       (second)
+import           Data.FoldApp (allOf)
 import           Data.Function                        (on)
 import           Data.List                            (cycle, groupBy, iterate',
                                                        nub, nubBy, sort, sortBy,
-                                                       (\\))
+                                                       (\\), sortOn)
+import           Data.List.Extra (groupOn)
 import qualified Data.Matrix                          as M
 import           Data.Matrix                          (Matrix, (!))
-import           Data.Maybe                           (fromJust, isJust,
+import           Data.Maybe                           (catMaybes, fromJust, isJust,
                                                        isNothing, listToMaybe)
 import           Data.Tuple                           (swap)
 import qualified Data.Vector                          as V
 import           Data.Vector                          (Vector)
-import           Prelude                              hiding
-                                                       (Either (Left, Right))
+import           Prelude                              hiding (Either (Left, Right))
+import           Universum.VarArg ((...))
+import           Util
 
-
+input :: IO [String]
 input = lines <$> readFile "input/input13.txt"
 
-isCart '<' = True
-isCart '>' = True
-isCart '^' = True
-isCart 'v' = True
-isCart _ = False
+isCart :: Char -> Bool
+--isCart '<' = True
+--isCart '>' = True
+--isCart '^' = True
+--isCart 'v' = True
+--isCart _ = False
+isCart = anyOf <$> (== '<') <*> (== '>') <*> (== '^') <*> (== 'v')
 
-data Move = Left | Straight | Right deriving (Show, Eq)
+data Move = Left | Straight | Right
+    deriving (Show, Eq)
+
+type Coordinate = (Int,Int)
 
 data Cart = Cart {
-    prevTurn :: Move,
-    direction :: Char,
-    loc :: (Int,Int)
+    _prevTurn  :: Move,
+    _direction :: Char,
+    _loc       :: Coordinate
 } deriving (Show, Eq)
+
+makeLenses ''Cart
 
 type Map = Matrix Char
 type Carts = Vector Cart
-type Coordinate = (Int,Int)
+
+foo :: Coordinate -> Char -> Maybe (Char, Coordinate)
+foo = if' <$$>>> isCart ... arg2
+             <*< Just . swap ... (,)
+             <*< const2 Nothing
 
 carts :: Map -> Carts
-carts = V.fromList . concatMap (fmap (uncurry (Cart Right) . fromJust) . filter isJust) . M.toLists . M.imap (\index symbol -> if isCart symbol then Just (symbol,index) else Nothing)
+carts = V.fromList . fmap (uncurry (Cart Right)) . catMaybes . concat . M.toLists . M.imap foo
 
-move (r,c) (dr,dc) = (r + dr,c + dc)
+move :: Coordinate -> Coordinate -> Coordinate
+--move (r,c) (dr,dc) = (r + dr,c + dc)
+move = (,) <$$>> (+) `oN` fst <*< (+) `oN` snd
 
 -- keep collided as-is
+action :: Cart -> Char -> Cart
+
+{-
 action c@(Cart _ 'x' _) _ = c
 
 action (Cart p        '^' l) '|'  = Cart p        '^' $ move l (-1, 0)
@@ -74,53 +96,130 @@ action (Cart Right    '<' l) '+'  = Cart Left     'v' $ move l ( 1, 0)
 action (Cart Left     '>' l) '+'  = Cart Straight '>' $ move l ( 0, 1)
 action (Cart Straight '>' l) '+'  = Cart Right    'v' $ move l ( 1, 0)
 action (Cart Right    '>' l) '+'  = Cart Left     '^' $ move l (-1, 0)
+-}
+
+action = if' <$$>>> (== 'x') . _direction ... arg1 <*< arg1 $
+         if' <$$>>> match '^' '|' <*< justMove (-1, 0) $
+         if' <$$>>> match 'v' '|' <*< justMove ( 1, 0) $
+         if' <$$>>> match '<' '-' <*< justMove ( 0,-1) $
+         if' <$$>>> match '>' '-' <*< justMove ( 0, 1) $
+
+         if' <$$>>> match '^' '/' <*< moveTurn ( 0, 1) '>' $
+         if' <$$>>> match '<' '/' <*< moveTurn ( 1, 0) 'v' $
+         if' <$$>>> match 'v' '/' <*< moveTurn ( 0,-1) '<' $
+         if' <$$>>> match '>' '/' <*< moveTurn (-1, 0) '^' $
+
+         if' <$$>>> match '^' '\\' <*< moveTurn ( 0,-1) '<' $
+         if' <$$>>> match '>' '\\' <*< moveTurn ( 1, 0) 'v' $
+         if' <$$>>> match '<' '\\' <*< moveTurn (-1, 0) '^' $
+         if' <$$>>> match 'v' '\\' <*< moveTurn ( 0, 1) '>' $
+
+         if' <$$>>> match2 Left     '^' '+' <*< moveTurnStep (-1, 0) '^' Straight $
+         if' <$$>>> match2 Straight '^' '+' <*< moveTurnStep ( 0, 1) '>' Right    $
+         if' <$$>>> match2 Right    '^' '+' <*< moveTurnStep ( 0,-1) '<' Left     $
+         if' <$$>>> match2 Left     'v' '+' <*< moveTurnStep ( 1, 0) 'v' Straight $
+         if' <$$>>> match2 Straight 'v' '+' <*< moveTurnStep ( 0,-1) '<' Right    $
+         if' <$$>>> match2 Right    'v' '+' <*< moveTurnStep ( 0, 1) '>' Left     $
+         if' <$$>>> match2 Left     '<' '+' <*< moveTurnStep ( 0,-1) '<' Straight $
+         if' <$$>>> match2 Straight '<' '+' <*< moveTurnStep (-1, 0) '^' Right    $
+         if' <$$>>> match2 Right    '<' '+' <*< moveTurnStep ( 1, 0) 'v' Left     $
+         if' <$$>>> match2 Left     '>' '+' <*< moveTurnStep ( 0, 1) '>' Straight $
+         if' <$$>>> match2 Straight '>' '+' <*< moveTurnStep ( 1, 0) 'v' Right    $
+         if' <$$>>> match2 Right    '>' '+' <*< moveTurnStep (-1, 0) '^' Left     $
+
+         error "shouldn't be here"
+
+match :: Char -> Char -> Cart -> Char -> Bool
+match = (&&) <$$$$>> ((==) <$$$$>> arg41 <*< _direction ... arg43)
+                 <*< ((==) <$$$$>> arg42 <*< arg44)
+
+match2 :: Move -> Char -> Char -> Cart -> Char -> Bool
+match2 = allOf <$$$$$>>> ((==) <$$$$$>> arg52 <*< _direction ... arg54)
+                     <*< ((==) <$$$$$>> arg53 <*< arg55)
+                     <*< ((==) <$$$$$>> arg51 <*< _prevTurn ... arg54)
+
+justMove :: Coordinate -> Cart -> ignore -> Cart
+justMove = const ... ($) <&>> over loc . move <*< id
+
+moveTurn :: Coordinate -> Char -> Cart -> ignore -> Cart
+moveTurn = const ... ($) . (.) <&>>> over loc . move
+                                 <*< set direction
+                                 <*< id
+
+moveTurnStep :: Coordinate -> Char -> Move -> Cart -> ignore -> Cart
+moveTurnStep = const ... compose3 <&>>>> over loc . move
+                                     <*< set direction
+                                     <*< set prevTurn
+                                     <*< id
 
 act :: Map -> Cart -> Cart
-act map = action <$> id <*> ((map !) . loc)
+act = action <$$>> arg2 <*< ((!) <&>> id <*< _loc)
 
-collided = (== 'x') . direction
+collided :: Cart -> Bool
+collided = (== 'x') . _direction
 
 findColliding :: Carts -> [Cart]
-findColliding = concat . filter ((> 1) . length) . groupBy (on (==) loc) . filter (not . collided) . V.toList
+findColliding = concat . filter ((> 1) . length) . groupOn _loc . filter (not . collided) . V.toList
 
-markColliding carts = carts V.// fmap (\colliding -> (fromJust $ V.elemIndex colliding carts, colliding { direction = 'x' })) (findColliding carts)
+collidingWithIndex :: Carts -> [(Int,Cart)]
+collidingWithIndex = fmap . (&&& set direction 'x') <$> fromJust ... flip V.elemIndex <*> findColliding
 
-step :: Map -> Carts -> Int -> Carts
-step map carts cartIndex = markColliding $ carts V.// [(cartIndex, act map (carts V.! cartIndex))]
+markColliding :: Carts -> Carts
+markColliding = (V.//) <$> id <*> collidingWithIndex
+
+step :: (Cart -> Cart) -> Carts -> Int -> Carts
+--step act carts cartIndex = markColliding $ carts V.// [(cartIndex, act (carts V.! cartIndex))]
+step = markColliding ... flip (V.//) . singleton ... (,) <$$$>>> arg33 <*< (. (V.!)) . (.) <*< arg32 -- uugh...
 
 tick :: Map -> Carts -> [Carts]
-tick map = take <$> length <*> tail . fmap fst . iterate' (uncurry (step map) &&& (+1) . snd) . (,0)
+--tick = take <$$>> length ... arg2
+--              <*< (\map -> tail . fmap fst . iterate' (uncurry (step $ act map) &&& succ . snd) . (,0))
+tick = take <$$>> length ... arg2
+              <*< (tail . fmap fst ... iterate' <&>> ((,) <$$>> uncurry . step . act <*< succ . snd ... arg2)
+                                                 <*< (,0))
 
-sortByLocation = V.fromList . sortBy (compare `on` loc) . V.toList
+sortByLocation :: Carts -> Carts
+sortByLocation = V.fromList . sortOn _loc . V.toList
 
 ticks :: Map -> Carts -> [[Carts]]
-ticks map = iterate' (tick map . sortByLocation . last) . (: [])
+--ticks map = iterate' (tick map . sortByLocation . last) . singleton
+--ticks = (. singleton) . iterate' . (. sortByLocation . last) . tick
+ticks = iterate' <&>> (. sortByLocation . last) . tick <*< singleton
 
 withCarts :: Carts -> Map -> Map
-withCarts carts = M.imap $ \i c -> case V.find ((== i) . loc) carts of
-    Just (Cart _ d _) -> d
-    Nothing           -> c
+--withCarts carts = M.imap $ \i c -> case V.find ((== i) . _loc) carts of
+--    Just (Cart _ d _) -> d
+--    Nothing           -> c
+withCarts = M.imap . (if' <$$$>>> isJust ...                (V.find <$$$>> (. _loc) . (==) ... arg32 <*< arg31)
+                              <*< _direction . fromJust ... (V.find <$$$>> (. _loc) . (==) ... arg32 <*< arg31)
+                              <*< arg33)
 
-withoutCarts = M.map $ \case
-    '>' -> '-'
-    '<' -> '-'
-    '^' -> '|'
-    'v' -> '|'
-    x   -> x
+withoutCarts :: Map -> Map
+--withoutCarts = M.map $ \case
+--    '>' -> '-'
+--    '<' -> '-'
+--    '^' -> '|'
+--    'v' -> '|'
+--    x   -> x
+withoutCarts = M.map $ if' <$> (== '>') <*> const '-' <*> (
+                       if' <$> (== '<') <*> const '-' <*> (
+                       if' <$> (== '^') <*> const '|' <*> (
+                       if' <$> (== 'v') <*> const '|' <*>
+                       id )))
 
-solve = (uncurry ticks &&& fst) . (withoutCarts &&& carts) . M.fromLists
+solve :: [String] -> ([[Carts]], Map)
+solve = ( (,) ... ticks <$> withoutCarts <*> carts <*> withoutCarts) . M.fromLists
 
-solve1 = swap . loc . fromJust . V.find collided . head . dropWhile (null . V.filter collided) . concat . fst . solve
-
-debug d = M.toLists . (!! d) . (\(res,map) -> (`withCarts` map) <$> concat res) . solve <$> input >>= mapM putStrLn
+solve1 = swap . _loc . fromJust . V.find collided . head . dropWhile (null . V.filter collided) . concat . fst . solve
 
 -- the location of the first crash
 solution1 = solve1 <$> input
 -- 115,138
 
+hasMultipleCarts :: Carts -> Bool
 hasMultipleCarts = (> 1) . length . V.filter (not . collided)
 
-solve2 = swap . loc . fromJust . V.find (not . collided) . last . head . dropWhile (hasMultipleCarts . last) . fst . solve
+solve2 = swap . _loc . fromJust . V.find (not . collided) . last . head . dropWhile (hasMultipleCarts . last) . fst . solve
 
 -- What is the location of the last cart 
 solution2 = solve2 <$> input

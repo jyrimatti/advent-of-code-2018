@@ -34,7 +34,7 @@ half1 solution = putStr $ " half 1: " ++ show solution
 half2 solution = putStrLn "" >> putStr (" half 2: " ++ show solution)
 
 main = do
-    day "1"
+    {-day "1"
     half1 =<< Day01.solution1
     half2 =<< Day01.solution2
 
@@ -102,6 +102,7 @@ main = do
     half1 =<< Day17.solution1
     half2 =<< Day17.solution2
 
+
     day "18"
     half1 =<< Day18.solution1
     half2 =<< Day18.solution2
@@ -122,17 +123,17 @@ main = do
     day "22"
     half1 Day22.solution1
     half2 Day22.solution2
-
+-}
     day "23"
     half1 =<< Day23.solution1
     half2 =<< Day23.solution2
-
+{-
     day "24"
     half1 =<< Day24.solution1
     half2 =<< Day24.solution2
 
     day "25"
     half1 =<< Day25.solution1
-
+-}
     putStrLn ""
     print =<< getCurrentTime

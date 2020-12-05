@@ -4,8 +4,10 @@
 {-# LANGUAGE TupleSections         #-}
 module Day16 where
 
+import           Control.Applicative (liftA2)
 import           Control.Applicative.Combinators (count, between, sepBy)
 import           Control.Arrow                        ((&&&))
+import           Control.Conditional (if')
 import           Data.Bifunctor                       (bimap)
 import           Data.Bits                            ((.&.), (.|.))
 import           Data.Function                        (on)
@@ -19,40 +21,58 @@ import           Data.Maybe                           (catMaybes, fromJust,
 import           Data.Ord                             (comparing)
 import qualified Data.Sequence                        as S
 import           Data.Sequence                        (Seq)
+import           Data.Tuple.Extra (uncurry3)
 import           Numeric.Natural
 import           Text.Megaparsec            (Parsec, anySingle, many, optional,
                                              parseMaybe, try, (<|>))
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum.VarArg ((...))
+import           Util
 
-
+input :: IO [String]
 input = lines <$> readFile  "input/input16.txt"
+
+input2 :: IO [String]
 input2 = lines <$> readFile  "input/input16_2.txt"
 
 type Parser = Parsec () String
 
-foo :: String -> Parser [Integer]
-foo txt = string txt *> between (char '[') (char ']') (decimal `sepBy` string ", ")
-beforeP = S.fromList . fmap Register <$> foo "Before: "
-afterP = S.fromList . fmap Register <$> foo "After:  "
+regsP :: String -> Parser [Integer]
+regsP = (*> between (char '[') (char ']') (decimal `sepBy` string ", ")) . string
+
+beforeP :: Parser Registers
+beforeP = S.fromList . fmap Register <$> regsP "Before: "
+
+afterP :: Parser Registers
+afterP = S.fromList . fmap Register <$> regsP "After:  "
 
 instrP :: Parser (Int, Integer, Integer, Integer)
 instrP = (,,,) <$> (decimal <* char ' ') <*> (decimal <* char ' ') <*> (decimal <* char ' ') <*> decimal
 
-ps p = fromJust . parseMaybe p
-before = ps beforeP
-after = ps afterP
-instr = ps instrP
+before :: String -> Registers
+before = fromJust ... parseMaybe beforeP
 
-parseData = fmap (\(a:b:c:_) -> (before a, instr b, after c)) . chunksOf 4
+after :: String -> Registers
+after = fromJust ... parseMaybe afterP
 
-newtype Register = Register { value :: Integer} deriving Eq
+instr :: String -> (Int, Integer, Integer, Integer)
+instr = fromJust ... parseMaybe instrP
+
+parseData :: [String] -> [((Int, Integer, Integer, Integer), Registers, Registers)]
+parseData = fmap ((,,) <$> instr . head . tail
+                       <*> before . head
+                       <*> after . head . tail . tail) . chunksOf 4
+
+newtype Register = Register { value :: Integer}
+    deriving Eq
+
 instance Show Register where
     show (Register v) = show v
 
-type Registers = S.Seq Register
+type Registers = Seq Register
 
-data Input = Reg Natural | Val Integer
+data Input = Reg {getReg :: Natural} | Val { getVal :: Integer}
 
 data Opcode = AddR | AddI |
               MulR | MulI |
@@ -73,11 +93,12 @@ data Instruction = Instruction {
 }
 
 (!) :: Registers -> Natural -> Integer
-(!) regs i = value $ S.index regs (fromIntegral i)
+(!) = value ... S.index <&>> id <*< fromIntegral
 
 update' :: Input -> Integer -> Registers -> Registers
-update' (Reg i) val = S.update (fromIntegral i) (Register val)
+update' = S.update <&>> fromIntegral . getReg <*< Register
 
+-- not gonna make this point free...
 behave :: Instruction -> Registers -> Registers
 behave (Instruction AddR (Reg a) (Reg b) c) regs = update' c (regs ! a + regs !   b) regs
 behave (Instruction AddI (Reg a) (Val b) c) regs = update' c (regs ! a +          b) regs
@@ -96,8 +117,11 @@ behave (Instruction EqIR (Val a) (Reg b) c) regs = update' c (if a        == reg
 behave (Instruction EqRI (Reg a) (Val b) c) regs = update' c (if regs ! a == b        then 1 else 0) regs
 behave (Instruction EqRR (Reg a) (Reg b) c) regs = update' c (if regs ! a == regs ! b then 1 else 0) regs
 
+reg :: Integer -> Input
 reg = Reg . fromIntegral
 
+-- not gonna make this point free...
+mkInstruction :: Opcode -> Integer -> Integer -> Integer -> Instruction
 mkInstruction AddR a b c = Instruction AddR (reg a) (reg b) (reg c)
 mkInstruction AddI a b c = Instruction AddI (reg a) (Val b) (reg c)
 mkInstruction MulR a b c = Instruction MulR (reg a) (reg b) (reg c)
@@ -115,24 +139,46 @@ mkInstruction EqIR a b c = Instruction EqIR (Val a) (reg b) (reg c)
 mkInstruction EqRI a b c = Instruction EqRI (reg a) (Val b) (reg c)
 mkInstruction EqRR a b c = Instruction EqRR (reg a) (reg b) (reg c)
 
-matches before (_,a,b,c) after opcode = behave (mkInstruction opcode a b c) before == after
+matches :: (a, Integer, Integer, Integer) -> Registers -> Registers -> Opcode -> Bool
+matches = (==) <$$$$>> arg43
+                   <*< (behave <$$$$>> (mkInstruction <$$$$>>>> arg44 <*< t42 ... arg41 <*< t43 ... arg41 <*< t44 ... arg41)
+                                   <*< arg42)
 
-solve1 = length . filter (>= 3) . fmap (length . filter id . (\(b,i,a) -> matches b i a <$> opcodes)) . parseData
+solve1 = length . filter (>= 3) . fmap (length . filter id . flip fmap opcodes . uncurry3 matches) . parseData
 
 -- how many samples in your puzzle input behave like three or more opcodes
 solution1 = solve1 <$> input
 -- 542
 
-opcodeCandidates :: [String] -> [[(Int, Opcode)]]
-opcodeCandidates = nub . sortOn length . fmap (catMaybes . (\(b,i@(opcode,_,_,_),a) -> (\oc -> if matches b i a oc then Just (opcode,oc) else Nothing) <$> opcodes)) . parseData
+baz :: (t, Integer, Integer, Integer) -> Registers -> Registers -> [Maybe (t, Opcode)]
+baz = flip fmap opcodes ...$$$ (if' <$$$$>>> matches
+                                         <*< (Just ... (,) <$$$$>> t41 ... arg41 <*< arg44)
+                                         <*< const4 Nothing) -- uuh...
 
-bar (((i,o):_):remaining,res) = (sortOn length $ filter (not . null) $ fmap (filter ((/= o) . snd) . filter ((/= i) . fst)) remaining, (i,o) : res)
-bar ([],res) = ([],res)
+opcodeCandidates :: [String] -> [[(Int, Opcode)]]
+opcodeCandidates = nub . sortOn length . fmap (catMaybes . uncurry3 baz) . parseData
+
+quux :: (Eq a, Eq b) => a -> b -> [(a, b)] -> [(a, b)]
+quux = filter ...$$ (liftA2 (&&) <&>> (. fst) . (/=)
+                                  <*< (. snd) . (/=))
+
+foo :: (Eq a, Eq b) => [[(a, b)]] -> [[(a, b)]]
+foo = sortOn length . filter (not . null) ... fmap . uncurry quux <$> head . head <*> tail
+
+bar :: (Eq a, Eq b) => [[(a, b)]] -> [(a, b)] -> ([[(a, b)]], [(a, b)])
+bar = if' <$$>>> null ... arg1
+             <*< (,)
+             <*< ( (,) <$$>> foo ...$$ arg1
+                         <*< ( (:) <&>> head . head <*< id) )
 
 matchOpcodes :: [String] -> [(Int, Opcode)]
-matchOpcodes = snd . head . filter (null . fst) . iterate' bar . (,[]) . opcodeCandidates
+matchOpcodes = snd . head . filter (null . fst) . iterate' (uncurry bar) . (,[]) . opcodeCandidates
 
-solve2 = flip S.index 0 . fmap value . foldl (flip behave) (S.fromList $ fmap Register [0,0,0,0]) . (\(matching,is) -> fmap (\(oc,a,b,c) -> mkInstruction (snd $ head $ filter ((== oc) . fst) matching) a b c) is) . bimap matchOpcodes (fmap instr)
+qux :: [(Int, Opcode)] -> [(Int, Integer, Integer, Integer)] -> [Instruction]
+qux = fmap . uncurry4 . flip (mkInstruction . snd . head ... filter . (. fst) . (==))
 
-solution2 = solve2 <$> do i1 <- input; i2 <- input2; pure (i1,i2)
+solve2 :: ([String], [String]) -> Integer
+solve2 = flip S.index 0 . fmap value . foldl (flip behave) (S.fromList $ fmap Register [0,0,0,0]) . uncurry qux . bimap matchOpcodes (fmap instr)
+
+solution2 = solve2 <$> ((,) <$> input <*> input2)
 -- 575

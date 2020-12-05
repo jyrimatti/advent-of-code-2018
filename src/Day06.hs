@@ -38,10 +38,10 @@ relevantWorld = (,) <$> both minimum . unzip <*> both maximum . unzip
 
 -- "simple and easy" way to say: x==x1||x==x2||y==y1||y==y2
 comparators :: (Int, Int) -> (Int, Int) -> Int -> Int -> Bool
-comparators = (||) ... (||) ... (||) <$$$$>>>> ((==) <$$$$>> arg43 <*< fst ... arg41) <*<
-                                               ((==) <$$$$>> arg43 <*< fst ... arg42) <*<
-                                               ((==) <$$$$>> arg44 <*< snd ... arg41) <*<
-                                               ((==) <$$$$>> arg44 <*< snd ... arg42)
+comparators = anyOf <$$$$>>>> ((==) <$$$$>> arg43 <*< fst ... arg41)
+                          <*< ((==) <$$$$>> arg43 <*< fst ... arg42)
+                          <*< ((==) <$$$$>> arg44 <*< snd ... arg41)
+                          <*< ((==) <$$$$>> arg44 <*< snd ... arg42)
 
 allRelevantCoordinates :: Coordinate -> Coordinate -> [(Coordinate, Bool)]
 --allRelevantCoordinates (x1,y1) (x2,y2) = [((x,y),x==x1||x==x2||y==y1||y==y2) | x <- [x1..x2], y <- [y1..y2]]

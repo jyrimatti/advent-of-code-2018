@@ -1,11 +1,16 @@
-{-# LANGUAGE LambdaCase    #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TupleSections    #-}
+{-# LANGUAGE TypeApplications #-}
 module Day15 where
 
 import           Algorithm.Search                     (bfs)
 import           Control.Arrow                        ((&&&))
+import           Control.Conditional (if')
+import           Control.Lens hiding ((...),index,(<|),(|>),transform,both,anyOf,allOf)
 import           Data.Bifunctor                       (bimap, first, second)
 import           Data.Foldable                        (toList)
+import           Data.FoldApp (listOf)
 import           Data.Function                        (on)
 import           Data.List                            (cycle, groupBy, iterate',
                                                        nub, nubBy, sort, sortBy,
@@ -23,14 +28,16 @@ import           Data.Sequence                        (Seq)
 import           Data.Tuple                           (swap)
 import qualified Data.Vector                          as V
 import           Data.Vector                          (Vector)
-import           Prelude                              hiding
-                                                       (Either (Left, Right),
-                                                       round)
+import           Prelude                              hiding (Either (Left, Right), round)
+import           Universum.VarArg ((...))
+import           Util
 
+inputLines :: FilePath -> IO [String]
+inputLines = fmap lines . readFile
 
-inputLines = fmap lines . readFile 
-
+input :: IO [String]
 input = inputLines "input/input15.txt"
+
 test1 = inputLines "input/input15_test1.txt"
 test2 = inputLines "input/input15_test2.txt"
 test3 = inputLines "input/input15_test3.txt"
@@ -44,117 +51,187 @@ type Map = Matrix Char
 type UnitType = Char
 
 data Unit = Unit {
-    unitType :: UnitType,
-    location :: (Int,Int),
-    power :: Int,
-    hp :: Int
+    _unitType :: UnitType,
+    _power    :: Int,
+    _hp       :: Int,
+    _location :: (Int,Int)
 } deriving (Show,Eq)
+
+makeLenses ''Unit
 
 type Units = S.Seq Unit
 
-isGoblin = (== 'G') . unitType
-isElf    = (== 'E') . unitType
+isGoblin :: Unit -> Bool
+isGoblin = (== 'G') . _unitType
 
-isAlive = (> 0) . hp
+isElf :: Unit -> Bool
+isElf    = (== 'E') . _unitType
 
-toUnit i 'G' = Just $ Unit 'G' i 3 200
-toUnit i 'E' = Just $ Unit 'E' i 3 200
-toUnit _  _  = Nothing
+isAlive :: Unit -> Bool
+isAlive = (> 0) . _hp
+
+toUnit :: (Int, Int) -> Char -> Maybe Unit
+toUnit = if' <$$>>> (== 'G') ... arg2
+                <*< Just . Unit 'G' 3 200 ... arg1 $
+         if' <$$>>> (== 'E') ... arg2
+                <*< Just . Unit 'E' 3 200 ... arg1
+                <*< const2 Nothing
 
 findUnits :: Map -> Units
 findUnits = S.fromList . catMaybes . concat . M.toLists . M.imap toUnit
 
-find pred = fmap . S.index <$> id <*> S.findIndexL pred
+find :: (Unit -> Bool) -> Units -> Maybe Unit
+find = fmap . S.index <$$>> arg2 <*< S.findIndexL
+
+findUnitWithCoords :: Units -> (Int, Int) -> Maybe Unit
+findUnitWithCoords = flip find <&>> id
+                                <*< (. _location) . (==)
 
 withUnits :: Units -> Map -> Map
-withUnits units = M.imap (\coords square -> maybe square unitType $ find ((== coords) . location) units)
+withUnits = M.imap . (maybe <$$$>>> arg33
+                                <*< const3 _unitType
+                                <*< const ... findUnitWithCoords)
 
 withoutUnits :: Map -> Map
-withoutUnits = M.map $ \case
-    'G' -> '.'
-    'E' -> '.'
-    x   -> x
+withoutUnits = M.map $ if' <$> (== 'G') <*> const '.' <*> (
+                       if' <$> (== 'E') <*> const '.' <*>
+                       id)
 
-targetsFor :: Unit -> Units -> [Unit]
-targetsFor (Unit sourceType _ _ _) = filter ((&&) <$> isAlive <*> (/= sourceType) . unitType) . toList
+unitTypeDiffersFrom :: Unit -> Unit -> Bool
+unitTypeDiffersFrom = (/=) `on` _unitType
 
-nextLocs (row,col) = [(row-1,col),(row,col-1),(row,col+1),(row+1,col)]
+targetsFor :: Units -> Unit -> [Unit]
+targetsFor = toList ... flip S.filter <&>> id
+                                       <*< ((&&) <$> isAlive <*> ) . unitTypeDiffersFrom
+
+nextLocs :: (Int, Int) -> [(Int, Int)]
+nextLocs = uncurry $ listOf <$$>>>> first  pred ... (,)
+                                <*< second pred ... (,)
+                                <*< second succ ... (,)
+                                <*< first  succ ... (,)
 
 isOpen :: Map -> Units -> (Int,Int) -> Bool
-isOpen map _ (x,y) | x < 0 || y < 0 || x > M.rows map || y > M.cols map = False
-isOpen map units loc                                                    = map ! loc == '.' && (loc `notElem` fmap location (S.filter isAlive units))
+--isOpen map _ (x,y) | x < 0 || y < 0 || x > M.rows map || y > M.cols map = False
+--isOpen map units loc                                                    = map ! loc == '.' && (loc `notElem` fmap location (S.filter isAlive units))
+isOpen = if' @Bool <$$$>>> (anyOf <$$$>>>> (<0) . fst ... arg33
+                                       <*< (<0) . snd ... arg33
+                                       <*< ((>) <$$$>> fst ... arg33 <*< M.rows ... arg31)
+                                       <*< ((>) <$$$>> snd ... arg33 <*< M.cols ... arg31))
+                       <*< const3 False
+                       <*< ((&&) <$$$>> ((== '.') ... ((!) <$$$>> arg31 <*< arg33))
+                                    <*< (notElem <$$$>> arg33 <*< fmap _location . S.filter isAlive ... arg32))
+
+isSolution :: Unit -> (Int, Int) -> Bool
+isSolution = flip elem . nextLocs . _location
+
+nextStates :: Map -> Units -> Unit -> (Int, Int) -> [(Int, Int)]
+nextStates = filter <$$$$>> ((<*>) . fmap (||) <$$$$>> (isOpen <$$$$>> arg41 <*< arg42) <*< (==) . _location ... arg43)
+                        <*< nextLocs ... arg44
 
 pathToTarget :: Map -> Units -> Unit -> Unit -> Maybe [(Int,Int)]
-pathToTarget map units source target = let
-    nextStates = filter ((||) <$> isOpen map units <*> (== location target)) . nextLocs
-    isSolution = (`elem` (nextLocs $ location target))
-    initialState = location source
-  in
-    bfs nextStates isSolution initialState
+pathToTarget = bfs <$$$$>>> (nextStates <$$$$>>> arg41 <*< arg42 <*< arg44)
+                        <*< isSolution ... arg44
+                        <*< _location ... arg43
 
 pathToNearest :: Map -> Units -> Unit -> [Unit] -> Maybe [(Int,Int)]
-pathToNearest map units source = listToMaybe . sortOn (length &&& head) . mapMaybe (pathToTarget map units source)
+pathToNearest = listToMaybe . sortOn (length &&& head) ... mapMaybe ...$$$ pathToTarget
 
-update :: (Unit -> Unit) -> Unit -> Units -> (Unit,Units)
-update f unit = (f unit,) . (S.adjust' f <$> fromJust . S.elemIndexL unit <*> id)
+update :: (Unit -> Unit) -> Unit -> Units -> (Units,Unit)
+update = (.) <$$>> flip (,) ... ($)
+               <*< (S.adjust' <$$$>>> arg31
+                                  <*< fromJust ... argDrop S.elemIndexL
+                                  <*< arg33)
 
-move :: Map -> Unit -> Units -> (Unit,Units)
-move map u units = let 
-    newLocation unit = maybe (location unit) head (pathToNearest map units unit $ targetsFor unit units)
-  in
-    update (\unit -> unit { location = newLocation unit }) u units
+newLocation :: Map -> Units -> Unit -> (Int, Int)
+newLocation = maybe <$$$>>> _location ... arg33
+                        <*< const3 head
+                        <*< (($) <$$$>> pathToNearest <*< argDrop targetsFor)
 
-attack :: Unit -> Units -> Units
-attack unit = let
-    inRange = (`elem` nextLocs (location unit)) . location
-    findTarget = head . sortOn (hp &&& location) . filter inRange . targetsFor unit
-  in
-    snd . (update (\u -> u { hp = hp u - power unit }) <$> findTarget <*> id)
+move :: Map -> Units -> Unit -> (Units,Unit)
+move = update <$$$>>> ((($) <$$$>>> arg31 <*< arg33 <*< arg33) ...$$ (set location ... newLocation))
+                  <*< arg33
+                  <*< arg32
 
-isAdjacentToTarget unit = (location unit `elem`) . concatMap (nextLocs . location) . targetsFor unit
+inRange :: Unit -> Unit -> Bool
+inRange = flip elem <&>> nextLocs . _location <*< _location
 
-act :: Map -> Unit -> Units -> Units
-act _   unit units | not (isAlive unit)            = units
-act _   unit units | isAdjacentToTarget unit units = attack unit units
-act map unit units                                 =
-    uncurry (\b -> if b then uncurry attack else snd) $ (uncurry isAdjacentToTarget &&& id) $ move map unit units
+findTarget :: Units -> Unit -> Unit
+findTarget = head . sortOn (_hp &&& _location) ... (filter <$$>> inRange ... arg2 <*< targetsFor)
+
+attack :: Units -> Unit -> Units
+attack = fst ... update <$$>>> over hp . (flip (-) <&>> _power <*< id) ... arg2
+                           <*< findTarget
+                           <*< arg1
+
+isAdjacentToTarget :: Units -> Unit -> Bool
+isAdjacentToTarget = ($) <$$>> (elem . _location ... arg2)
+                           <*< concatMap (nextLocs . _location) ... targetsFor
+
+act :: Map -> Units -> Unit -> Units
+act = if' <$$$>>> not . isAlive ... arg33
+              <*< arg32 $
+      if' <$$$>>> argDrop isAdjacentToTarget
+              <*< argDrop attack
+              <*< uncurry afterMove ... move
+
+afterMove :: Units -> Unit -> Units
+afterMove = if' <$$>>> isAdjacentToTarget
+                   <*< attack
+                   <*< arg1
 
 actUnit :: Map -> Units -> Int -> Units
-actUnit map units unitIndex = act map (S.index units unitIndex) units
+actUnit = act <$$$>>> arg31 <*< arg32 <*< argDrop S.index
 
 round :: Map -> Units -> [Units]
-round map = fmap (S.filter isAlive) . (take <$> length <*> tail . fmap fst . iterate' (uncurry (actUnit map) &&& (+ 1) . snd) . (,0))
+round = fmap (S.filter isAlive) ... take <$$>> length ... arg2
+                                           <*< tail . fmap fst ... (iterate' <&>> ((,) <$$>> uncurry . actUnit <*< argDrop (succ . snd))
+                                                                              <*< (,0))
 
 allRounds :: Map -> Units -> [[Units]]
-allRounds map = iterate' (round map . S.sortOn location . last) . (: [])
+allRounds = iterate' <&>> (. S.sortOn _location . last) . round <*< singleton
 
-mapAndUnits elfPower = (withoutUnits &&& fmap (withElfPower elfPower) . findUnits) . M.fromLists
+mapAndUnits :: Int -> [String] -> (Map, Units)
+mapAndUnits = (. M.fromLists) . ((,) <$$>> argDrop withoutUnits <*< (. findUnits) . fmap . withElfPower)
 
-unitTypesAtEndOfRound = length . nub . toList . S.sort . fmap unitType . last
+unitTypesAtEndOfRound :: [Units] -> Int
+unitTypesAtEndOfRound = length . nub . fmap _unitType . toList . last
 
+notCompleted :: (a, [Units]) -> Bool
 notCompleted = (>1) . unitTypesAtEndOfRound . snd
 
-dec x = x - 1
-
 solve :: Int -> [String] -> (Map,(Int,[Units]))
-solve elfPower = (fst &&& head . dropWhile notCompleted . zip [0..] . uncurry allRounds) . mapAndUnits elfPower
+solve = ((,) <$> fst <*> head . dropWhile notCompleted . zip [0..] . uncurry allRounds) ... mapAndUnits
 
-outcome = (*) <$> sum . fmap hp . last . snd <*> uncurry (+) . bimap dec (dec . unitTypesAtEndOfRound . init)
+outcome :: (Int, [Seq Unit]) -> Int
+outcome = (*) <$> sum . fmap _hp . last . snd
+              <*> ((+) `oN` pred <$> fst
+                                 <*> unitTypesAtEndOfRound . init . snd)
 
 -- the number of full rounds that were completed (not counting the round in which combat ends) multiplied by the sum of the hit points of all remaining units at the moment combat ends.
 solution1 = outcome . snd . solve 3 <$> input
 -- 190777
 
-withElfPower pow unit | isGoblin unit = unit
-withElfPower pow unit                 = unit { power = pow }
+withElfPower :: Int -> Unit -> Unit
+withElfPower = if' <$$>>> isGoblin ... arg2
+                      <*< arg2
+                      <*< set power
+
+onlyElvesRemain :: (a, [Units]) -> Bool
+onlyElvesRemain = all isElf . last . snd
+
+noElvesLost :: Int -> (a, [Units]) -> Bool
+noElvesLost = (==) <&>> id
+                    <*< length . S.filter isElf . last . snd
 
 elfsWinWithoutLosses :: Int -> (Int,[Units]) -> Bool
-elfsWinWithoutLosses startingElves = (&&) <$> all isElf . last . snd <*> (== startingElves) . length . S.filter isElf . last . snd
+elfsWinWithoutLosses = (&&) <$$>> argDrop onlyElvesRemain <*< noElvesLost
+
+withElfWinStatus :: Int -> [String] -> ((Int, [Units]), Bool)
+withElfWinStatus = ((,) <$$>> arg2 <*< elfsWinWithoutLosses) <$$>> length . S.filter isElf . findUnits . M.fromLists ... arg2
+                                                               <*< snd ... solve
 
 -- What is the outcome
-solution2 = outcome . fst . head . filter snd . traverse (\i -> curry (snd &&& uncurry elfsWinWithoutLosses) <$> length . S.filter isElf . findUnits . M.fromLists <*> snd . solve i) [4..] <$> input
+solution2 = outcome . fst . head . filter snd . traverse withElfWinStatus [4..] <$> input
 -- 47388
 
 tests = traverse (fmap $ outcome . snd . solve 3) [test1, test2, test3, test4, test5, test6, test7]
-
-debug d = second M.toLists . last . drop d . (\(map,res) -> (\us -> (hp <$> S.sortOn location us,us `withUnits` map)) <$> concat res) . solve 3 <$> input >>= \(us,map) -> do mapM_ putStrLn map; print us

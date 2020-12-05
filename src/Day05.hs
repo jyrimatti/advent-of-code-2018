@@ -23,9 +23,11 @@ data Reaction = Reacted | Stable
 --react a (b,bs)                           = (b      , a : bs )
 
 react :: Char -> (Reaction, String) -> (Reaction, String)
-react = if' <$$>>> (== "") . snd ... arg2                <*< ((,) <$$>> fst ... arg2 <*< singleton ... arg1) <*< (
-        if' <$$>>> ((==) <&>> toggleCase <*< head . snd) <*< (Reacted,) . tail . snd ... arg2                <*< (
-                                                              (,) <$$>> fst ... arg2 <*< ((:) <&>> id <*< snd)))
+react = if' <$$>>> (== "") . snd ... arg2
+               <*< ((,) <$$>> fst ... arg2 <*< singleton ... arg1) $
+        if' <$$>>> ((==) <&>> toggleCase <*< head . snd)
+               <*< (Reacted,) . tail . snd ... arg2 $
+                   (,) <$$>> fst ... arg2 <*< ((:) <&>> id <*< snd)
 
 act :: (a, String) -> (Reaction, String)
 act = foldr react (Stable,[]) . snd
