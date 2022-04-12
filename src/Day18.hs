@@ -14,6 +14,7 @@ import           Data.Tuple.Extra (both, fst3, snd3, thd3)
 import qualified Data.Vector.Unboxed as V
 import           Universum.VarArg ((...))
 import           Util
+import Data.Composition ((.*), (.**))
 
 input :: IO [String]
 input = lines <$> readFile  "input/input18.txt"
@@ -39,7 +40,7 @@ inrange = allOf <$$>>>> (>= 0) . snd ... arg2
                     <*< ((>) <&>> M.rows <*< fst)
 
 adjacent :: (Int, Int) -> [(Int, Int)]
-adjacent = filter <$> (/=) <*> uncurry (flip fmap movements ...$$ bimap) . both (flip ($))
+adjacent = filter <$> (/=) <*> uncurry (flip fmap movements .* bimap) . both (flip ($))
 
 movements :: [(Int -> Int, Int -> Int)]
 movements = both (+) <$> liftA2 (,) [-1,0,1] [-1,0,1]
@@ -72,7 +73,7 @@ solution1 = (!! 10) . solve <$> input
 
 bar :: Int -> Int -> Int -> String -> S.Set String -> (S.Set String, Int, Int)
 bar = if' <$$$$$>>> (S.member <$$$$$>> arg54 <*< arg55)
-                <*< (const ... argDrop ...$$ (S.empty,,) <$$$>> (if' <$$$>>> (== 0) ...$$$ arg31 <*< arg33 <*< arg31)
+                <*< (const ... (argDrop .* (S.empty,,)) <$$$>> (if' <$$$>>> (== 0) .** arg31 <*< arg33 <*< arg31)
                                                             <*< (if' <$$$>>> ((&&) <$$$>> ((>0) ... arg31) <*< (==0) ... arg32) <*< arg33 <*< arg32 ))
                 <*< ((,,) <$$$$$>>> (S.insert <$$$$$>> arg54 <*< arg55) <*< arg51 <*< arg52)
 

@@ -8,6 +8,7 @@ import Universum.VarArg ((...))
 
 -- some Hackage additions:
 
+singleton :: a -> [a]
 singleton = (: [])
 
 triple :: a -> (a, a, a)
@@ -39,23 +40,6 @@ uncurry4 f (w, x, y, z) = f w x y z
 
 both3 :: (t -> c) -> (t, t, t) -> (c, c, c)
 both3 f (a,b,c) = (f a, f b, f c)
-
--- must sometimes fix variadic type to make this pass type checker...
-(...$$) :: (x -> y) -> (a -> b -> x) -> (a -> b -> y)
-(...$$) = (...)
-infixl 8 ...$$
-
-(...$$$) :: (x -> y) -> (a -> b -> c -> x) -> (a -> b -> c -> y)
-(...$$$) = (...)
-infixl 8 ...$$$
-
-(...$$$$) :: (x -> y) -> (a -> b -> c -> d -> x) -> (a -> b -> c -> d -> y)
-(...$$$$) = (...)
-infixl 8 ...$$$$
-
-(...$$$$$) :: (x -> y) -> (a -> b -> c -> d -> e -> x) -> (a -> b -> c -> d -> e -> y)
-(...$$$$$) = (...)
-infixl 8 ...$$$$$
 
 argDrop :: a -> b -> a
 argDrop = const
@@ -93,55 +77,135 @@ infixl 5 `oN3`
 anyOf :: FoldrApp Bool Bool f => f
 anyOf = foldrApp (||) False
 
--- some variations of "Applicative Functor of functions"
 
+-- variation of ($) with the same fixity as the following operators
 (<*<) :: (a -> b) -> a -> b
 (<*<) = ($)
 infixl 4 <*<
 
 
+-- some variations of "Applicative Functor of functions"
+
+
+
+-- 1) each argument goes through its own function ("pipe")
+
+--          (s -> t -> z)
+--  a - f1 -/    /
+--  b - f2 -----/
 (<&>>) :: (s -> t -> z) -> (a -> s) -> (b -> t) -> a -> b -> z
 (<&>>) f f1 f2 a b = f (f1 a) (f2 b)
 infixl 4 <&>>
 
+--          (s -> t -> u -> z)
+--  a - f1 -/    /    /
+--  b - f2 -----/    /
+--  c - f3 ---------/
 (<&>>>) :: (s -> t -> u -> z) -> (a -> s) -> (b -> t) -> (c -> u) -> a -> b -> c -> z
 (<&>>>) f f1 f2 f3 a b c = f (f1 a) (f2 b) (f3 c)
 infixl 4 <&>>>
 
+--          (s -> t -> u -> v -> z)
+--  a - f1 -/    /    /    /
+--  b - f2 -----/    /    /
+--  c - f3 ---------/    /
+--  d - f4 -------------/
 (<&>>>>) :: (s -> t -> u -> v -> z) -> (a -> s) -> (b -> t) -> (c -> u) -> (d -> v) -> a -> b -> c -> d -> z
 (<&>>>>) f f1 f2 f3 f4 a b c d = f (f1 a) (f2 b) (f3 c) (f4 d)
 infixl 4 <&>>>>
 
+--          (s -> t -> u -> v -> w -> z)
+--  a - f1 -/    /    /    /    /
+--  b - f2 -----/    /    /    /
+--  c - f3 ---------/    /    /
+--  d - f4 -------------/    /
+--  e - f5 -----------------/
 (<&>>>>>) :: (s -> t -> u -> v -> w -> z) -> (a -> s) -> (b -> t) -> (c -> u) -> (d -> v) -> (e -> w) -> a -> b -> c -> d -> e -> z
 (<&>>>>>) f f1 f2 f3 f4 f5 a b c d e = f (f1 a) (f2 b) (f3 c) (f4 d) (f5 e)
 infixl 4 <&>>>>>
 
 
+
+-- 2) all arguments go through all functions ("pipes")
+
+--       (s -> z)
+--       /
+--     f1
+--  a -/
+--(<$>) :: (s -> z) -> (a -> s) -> a -> z
+-- This is just `fmap` for functions
+
+--       (s -> t -> z)
+--       /    /
+--     f1   f2
+--  a -/----/
+--(<$>>) :: (s -> t -> z) -> (a -> s) -> (a -> t) -> a -> z
+-- This is just: (s -> t -> z) <$> (a -> s) <*> (a -> t) 
+
+-- and so on.
+
+
+--        (s -> t -> z)
+--        /    /
+--      f1   f2
+--  a -//---//
+--  b -/----/
 (<$$>>) :: (s -> t -> z) -> (a -> b -> s) -> (a -> b -> t) -> a -> b -> z
 (<$$>>) f f1 f2 a b = f (f1 a b) (f2 a b)
 infixl 4 <$$>>
 
+--       (s -> t -> u -> z)
+--       /    /    /
+--      f1   f2   f3
+--  a -//---//---//
+--  b -/----/----/
 (<$$>>>) :: (s -> t -> u -> z) -> (a -> b -> s) -> (a -> b -> t) -> (a -> b -> u) -> a -> b -> z
 (<$$>>>) f f1 f2 f3 a b = f (f1 a b) (f2 a b) (f3 a b)
 infixl 4 <$$>>>
 
+--       (s -> t -> u -> v -> z)
+--       /    /    /    /
+--      f1   f2   f3   f4
+--  a -//---//---//---//
+--  b -/----/----/----/
 (<$$>>>>) :: (s -> t -> u -> v -> z) -> (a -> b -> s) -> (a -> b -> t) -> (a -> b -> u) -> (a -> b -> v) -> a -> b -> z
 (<$$>>>>) f f1 f2 f3 f4 a b = f (f1 a b) (f2 a b) (f3 a b) (f4 a b)
 infixl 4 <$$>>>>
 
+--        /- f1 -\
+--  a -\ //- f2 -\\
+--      X--- f3 - f - z
+--  b -/ \\- f4 -//
+--        \- f5 -/
 (<$$>>>>>) :: (s -> t -> u -> v -> w -> z) -> (a -> b -> s) -> (a -> b -> t) -> (a -> b -> u) -> (a -> b -> v) -> (a -> b -> w) -> a -> b -> z
 (<$$>>>>>) f f1 f2 f3 f4 f5 a b = f (f1 a b) (f2 a b) (f3 a b) (f4 a b) (f5 a b)
 infixl 4 <$$>>>>>
 
+--        /-- f1 --\
+--  a -\ //-- f2 --\\
+--      X---- f3 -- f - z
+--  b -/ \\\- f4 -///
+--        \\- f5 -//
+--         \- f6 -/
 (<$$>>>>>>) :: (s -> t -> u -> v -> w -> x -> z) -> (a -> b -> s) -> (a -> b -> t) -> (a -> b -> u) -> (a -> b -> v) -> (a -> b -> w) -> (a -> b -> x) -> a -> b -> z
 (<$$>>>>>>) f f1 f2 f3 f4 f5 f6 a b = f (f1 a b) (f2 a b) (f3 a b) (f4 a b) (f5 a b) (f6 a b)
 infixl 4 <$$>>>>>>
 
 
+--  a -\
+--      \ /- f1 -\
+--  b ---X-- f2 - f - z
+--      /
+--  c -/
 (<$$$>>) :: (s -> t -> z) -> (a -> b -> c -> s) -> (a -> b -> c -> t) -> a -> b -> c -> z
 (<$$$>>) f f1 f2 a b c = f (f1 a b c) (f2 a b c)
 infixl 4 <$$$>>
 
+--  a -\
+--      \ /- f1 -\
+--  b ---X-- f2 - f - z
+--      / \- f3 -/
+--  c -/
 (<$$$>>>) :: (s -> t -> u -> z) -> (a -> b -> c -> s) -> (a -> b -> c -> t) -> (a -> b -> c -> u) -> a -> b -> c -> z
 (<$$$>>>) f f1 f2 f3 a b c = f (f1 a b c) (f2 a b c) (f3 a b c)
 infixl 4 <$$$>>>

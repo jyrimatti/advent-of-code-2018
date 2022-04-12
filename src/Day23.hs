@@ -21,6 +21,7 @@ import           Text.Megaparsec.Char       (char, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
 import           Util
+import Data.Composition ((.*))
 
 input :: IO [String]
 input = lines <$> readFile "input/input23.txt"
@@ -67,14 +68,14 @@ limitedRange = enumFromTo <$$$>> (max <$$$>> (*10) ... arg32 <*< ((-) <$$$>> arg
                              <*< (min <$$$>> (+9) . (*10) ... arg32 <*< ((+) <$$$>> arg31 <*< arg33))
 
 coords :: Nanobot -> [Coord]
-coords = (filter ...$$ flip (.)) <$> manhattan . pos
+coords = (filter .* flip (.)) <$> manhattan . pos
                                  <*> flip (<=) . radius
                                  <*> (liftA3 (,,) <$> (enumFromTo <$> ((-) <$> fst3 . pos <*> radius) <*> ((+) <$> fst3 . pos <*> radius))
                                                   <*> (enumFromTo <$> ((-) <$> snd3 . pos <*> radius) <*> ((+) <$> snd3 . pos <*> radius))
                                                   <*> (enumFromTo <$> ((-) <$> thd3 . pos <*> radius) <*> ((+) <$> thd3 . pos <*> radius)))
 
 coords2 :: Coord -> Nanobot -> [Coord]
-coords2 = (filter ...$$ flip (.)) <$$>>> manhattan . pos ... arg2
+coords2 = (filter .* flip (.)) <$$>>> manhattan . pos ... arg2
                                      <*< flip (<=) . radius ... arg2
                                      <*< (liftA3 (,,) <$$>>> (limitedRange <$$>>> fst3 . pos ... arg2 <*< fst3 ... arg1 <*< radius ... arg2)
                                                          <*< (limitedRange <$$>>> snd3 . pos ... arg2 <*< snd3 ... arg1 <*< radius ... arg2)
@@ -172,7 +173,7 @@ foo1 = fmap fst . maximumsBy snd ... (. fmap nanobot) . (fmap <$$>> flip ($) ...
                                                      <*< fmap inRangeOfBots2 ... ((.) <$> uncurry . (boxify <&>>> id <*< triple <*< triple) <*> limits ... getCorners) )
 
 foo2 :: (Coord, Coord) -> Int -> [String] -> [(Coord, Coord)]
-foo2 = fmap fst . maximumsBy snd ... (. fmap nanobot) ...$$ (fmap <$$$>> (. inRangeOfBots2) . flip ($) ... arg33
+foo2 = (fmap fst . maximumsBy snd ... (. fmap nanobot)) .* (fmap <$$$>> (. inRangeOfBots2) . flip ($) ... arg33
                                                           <*< (($) <$$$>> uncurry . boxify ... arg32 <*< arg31))
 
 intersects :: (Coord,Coord) -> (Coord,Coord) -> Bool

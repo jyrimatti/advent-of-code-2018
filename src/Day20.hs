@@ -15,7 +15,7 @@ import           Data.FoldApp (allOf, sumOf)
 import           Data.List                 (intercalate, intersperse, iterate',
                                             maximumBy)
 import qualified Data.Matrix               as M
-import           Data.Matrix.Unboxed       (Matrix, cols, rows, (!))
+import           Data.Matrix.Unboxed       (Matrix, cols, rows, (!), toLists, toRows, fromLists)
 import           Data.Maybe                (catMaybes, fromJust)
 import           Data.Ord                  (comparing)
 import qualified Data.Sequence             as S
@@ -29,6 +29,7 @@ import           Text.Megaparsec           (Parsec, anySingle, optional, parse,
 import           Text.Megaparsec.Char      (char, space, string)
 import           Universum.VarArg ((...))
 import           Util
+import Data.Composition ((.***), (.*))
 
 input :: IO String
 input = readFile  "input/input20.txt"
@@ -119,8 +120,8 @@ baz2 :: Int -> Int -> Int -> Int -> Int -> Int
 baz2 = sumOf <$$$$$>>> arg52 <*< (*2) ... arg54 <*< arg55
 
 extendIfNeeded :: Int -> Int -> Int -> Int -> MapBuilder -> MapBuilder
-extendIfNeeded = extendMap <$$$$$>> (bimap <$$$$$>>> const ...$$$$ baz1
-                                                 <*< const ...$$$$ baz2
+extendIfNeeded = extendMap <$$$$$>> (bimap <$$$$$>>> const .*** baz1
+                                                 <*< const .*** baz2
                                                  <*< (middle &&& middle) ... arg55)
                                 <*< arg55
 
@@ -164,7 +165,7 @@ baz = (,) ... (,) <$$$$>> ((+) <$$$$>> arg41 <*< arg42) <*< ((+) <$$$$>> arg41 <
 type Map = Matrix Char
 
 showMap :: Map -> [String]
-showMap = M.toLists
+showMap = toLists
 
 nextLocs :: [(Int, Int)]
 nextLocs = [(-1,0),(0,-1),(0,1),(1,0)]
@@ -184,8 +185,8 @@ isDoor = (`elem` ['-','|']) ... ( (... (,)) . (!) <$$$>>> arg32
                                                       <*< ydy)
 
 nextStates :: Coord -> Map -> [Coord]
-nextStates = ($) <$$>> fmap . ( (. both (*2)) ...$$ bimap <$> (+) . fst <*> (+) . snd) ... arg1
-                   <*< (`filter` nextLocs) ...$$ ((&&) <$$$>> isDoor <*< inside)
+nextStates = ($) <$$>> fmap . ( (. both (*2)) .* bimap <$> (+) . fst <*> (+) . snd) ... arg1
+                   <*< (`filter` nextLocs) .* ((&&) <$$$>> isDoor <*< inside)
 
 pathToTarget :: Map -> Coord -> Coord -> Maybe [Coord]
 pathToTarget = fmap snd ... aStar <$$$>>>>> flip nextStates ... arg31
@@ -199,7 +200,7 @@ quux = (+) <$$>> abs ... flip (-) `oN` fst
              <*< abs ... flip (-) `oN` snd
 
 findCoords :: Char -> Map -> [Coord]
-findCoords = filter (not . null) . concatMap (fmap <$> (,) . fst <*> snd) . zip [0..] ... fmap <&>> (V.toList ... V.findIndices . (==)) <*< M.toRows
+findCoords = filter (not . null) . concatMap (fmap <$> (,) . fst <*> snd) . zip [0..] ... fmap <&>> (V.toList ... V.findIndices . (==)) <*< toRows
 
 extendBranch :: [Part] -> (Int, Int) -> MapBuilder -> ([Part], (Int, Int), MapBuilder)
 extendBranch = if' <$$>>> null ... arg1
@@ -214,7 +215,7 @@ buildMap :: [Part] -> MapBuilder
 buildMap = thd3 . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) . (, (0,0), initialMap)
 
 toMap :: String -> Map
-toMap = M.fromLists . toList . fmap toList . buildMap . regex 
+toMap = fromLists . toList . fmap toList . buildMap . regex 
 
 
 shortestPaths :: Map -> [(Coord,Maybe [Coord])]

@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections   #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 module Day04 where 
     
 import Control.Arrow              ((&&&))
@@ -23,8 +25,9 @@ import Text.Megaparsec            (Parsec, anySingleBut, many,
                                              optional, parseMaybe, try, (<|>))
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
-import Universum ((...))
+import Universum ((...), Generic)
 import Util
+import Data.Generics.Product (field)
 
 
 
@@ -36,12 +39,10 @@ data Event = BeginShift | FallAsleep | WakeUp
 type GuardId = Int
 
 data Record = Record {
-    _minute :: Int,
-    _guard  :: Maybe GuardId,
-    _event  :: Event
-} deriving Show
-
-makeLenses ''Record
+    minute :: Int,
+    guard  :: Maybe GuardId,
+    event  :: Event
+} deriving (Show,Generic)
 
 type Parser = Parsec () String
 
@@ -58,7 +59,7 @@ record :: String -> Record
 record = fromJust . parseMaybe recordP
 
 withPreviousGuardIfMissing :: [Record] -> Record -> Record
-withPreviousGuardIfMissing = over guard <&>> flip (<|>) . _guard . head <*< id
+withPreviousGuardIfMissing = over (field @"guard") <&>> flip (<|>) . guard . head <*< id
 
 withGuardId :: [Record] -> Record -> [Record]
 withGuardId = (:) <$$>> withPreviousGuardIfMissing <*< arg1
@@ -73,10 +74,10 @@ eventsMatch :: Event -> Event -> Bool
 eventsMatch = (&&) <&>> (== FallAsleep) <*< (== WakeUp)
 
 recordsMatch :: Record -> Record -> Bool
-recordsMatch = (&&) <$$>> guardsMatch `oN` _guard <*< eventsMatch `oN` _event
+recordsMatch = (&&) <$$>> guardsMatch `oN` guard <*< eventsMatch `oN` event
 
 minutesForGuard :: Record -> Record -> (GuardId, (Int, Int))
-minutesForGuard = (,) <$$>> fromJust . _guard ... arg1 <*< (,) `oN` _minute
+minutesForGuard = (,) <$$>> fromJust . guard ... arg1 <*< (,) `oN` minute
 
 newElement :: Record -> Record -> [(GuardId, (Int, Int))]
 newElement = if' <$$>>> recordsMatch

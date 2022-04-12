@@ -29,6 +29,7 @@ import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
 import           Util
+import Data.Composition ((.**), (.*))
 
 input :: IO [String]
 input = lines <$> readFile  "input/input16.txt"
@@ -151,7 +152,7 @@ solution1 = solve1 <$> input
 -- 542
 
 baz :: (t, Integer, Integer, Integer) -> Registers -> Registers -> [Maybe (t, Opcode)]
-baz = flip fmap opcodes ...$$$ (if' <$$$$>>> matches
+baz = flip fmap opcodes .** (if' <$$$$>>> matches
                                          <*< (Just ... (,) <$$$$>> t41 ... arg41 <*< arg44)
                                          <*< const4 Nothing) -- uuh...
 
@@ -159,8 +160,8 @@ opcodeCandidates :: [String] -> [[(Int, Opcode)]]
 opcodeCandidates = nub . sortOn length . fmap (catMaybes . uncurry3 baz) . parseData
 
 quux :: (Eq a, Eq b) => a -> b -> [(a, b)] -> [(a, b)]
-quux = filter ...$$ (liftA2 (&&) <&>> (. fst) . (/=)
-                                  <*< (. snd) . (/=))
+quux = filter .* (liftA2 (&&) <&>> (. fst) . (/=)
+                              <*< (. snd) . (/=))
 
 foo :: (Eq a, Eq b) => [[(a, b)]] -> [[(a, b)]]
 foo = sortOn length . filter (not . null) ... fmap . uncurry quux <$> head . head <*> tail
@@ -168,7 +169,7 @@ foo = sortOn length . filter (not . null) ... fmap . uncurry quux <$> head . hea
 bar :: (Eq a, Eq b) => [[(a, b)]] -> [(a, b)] -> ([[(a, b)]], [(a, b)])
 bar = if' <$$>>> null ... arg1
              <*< (,)
-             <*< ( (,) <$$>> foo ...$$ arg1
+             <*< ( (,) <$$>> foo .* arg1
                          <*< ( (:) <&>> head . head <*< id) )
 
 matchOpcodes :: [String] -> [(Int, Opcode)]

@@ -31,6 +31,7 @@ import           Data.Vector                          (Vector)
 import           Prelude                              hiding (Either (Left, Right), round)
 import           Universum.VarArg ((...))
 import           Util
+import Data.Composition ((.**), (.*))
 
 inputLines :: FilePath -> IO [String]
 inputLines = fmap lines . readFile
@@ -134,7 +135,7 @@ pathToTarget = bfs <$$$$>>> (nextStates <$$$$>>> arg41 <*< arg42 <*< arg44)
                         <*< _location ... arg43
 
 pathToNearest :: Map -> Units -> Unit -> [Unit] -> Maybe [(Int,Int)]
-pathToNearest = listToMaybe . sortOn (length &&& head) ... mapMaybe ...$$$ pathToTarget
+pathToNearest = listToMaybe . sortOn (length &&& head) ... (mapMaybe .** pathToTarget)
 
 update :: (Unit -> Unit) -> Unit -> Units -> (Units,Unit)
 update = (.) <$$>> flip (,) ... ($)
@@ -148,7 +149,7 @@ newLocation = maybe <$$$>>> _location ... arg33
                         <*< (($) <$$$>> pathToNearest <*< argDrop targetsFor)
 
 move :: Map -> Units -> Unit -> (Units,Unit)
-move = update <$$$>>> ((($) <$$$>>> arg31 <*< arg33 <*< arg33) ...$$ (set location ... newLocation))
+move = update <$$$>>> ((($) <$$$>>> arg31 <*< arg33 <*< arg33) .* (set location ... newLocation))
                   <*< arg33
                   <*< arg32
 

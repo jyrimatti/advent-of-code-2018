@@ -2,7 +2,6 @@ module Day03 where
 
 import Control.Applicative        (liftA2)
 import Control.Arrow              ((&&&))
-import Data.Aviary.Birds
 import Data.List                  (find, group, groupBy, sort, sortBy)
 import Data.List.Extra            (groupSortOn)
 import Data.Maybe                 (fromJust)

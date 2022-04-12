@@ -21,6 +21,7 @@ import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
 import           Util
+import Data.Composition ((.*))
 
 input :: IO [String]
 input = lines <$> readFile  "input/input17.txt"
@@ -56,8 +57,8 @@ clay :: String -> [Coord]
 clay = fromJust . parseMaybe rowP
 
 foo :: Int -> Int -> [Coord] -> Maybe Coord
-foo = find ...$$ ((&&) <$$$>> ((==) <$$$>> arg31 <*< snd3 ... arg33)
-                          <*< ((==) <$$$>> arg32 <*< thd3 ... arg33))
+foo = find .* ((&&) <$$$>> ((==) <$$$>> arg31 <*< snd3 ... arg33)
+                       <*< ((==) <$$$>> arg32 <*< thd3 ... arg33))
 
 qux :: Int -> Int -> [Coord] -> Substance
 qux = maybe Empty fst3 ... foo

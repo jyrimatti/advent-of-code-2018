@@ -29,6 +29,7 @@ import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
 import           Util
+import Data.Composition ((.*))
 
 input :: IO [String]
 input = lines <$> readFile  "input/input19.txt"
@@ -161,10 +162,10 @@ process :: Input -> Seq Instruction -> IP -> Registers -> (IP,Registers)
 process = ((,) <$$>> fromIntegral . succ ... (!) <*< arg1) <$$$$>> bar <*< val ... arg41
 
 baz :: Input -> Seq Instruction -> (IP, Registers) -> (IP, Registers)
-baz = uncurry ...$$ process
+baz = uncurry .* process
 
 solv :: Registers -> Input -> Seq Instruction -> [(IP, Registers)]
-solv = (...$$ baz) . flip iterate' . (0,)
+solv = (.* baz) . flip iterate' . (0,)
 
 continues :: IP -> IP -> Bool
 continues = (&&) <$$>> (>= 0) ... arg2
