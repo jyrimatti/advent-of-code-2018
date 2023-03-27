@@ -12,6 +12,7 @@ import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum.VarArg ((...))
 import Util
+import Universum (on)
 
 input = readFile "input/input08.txt"
 
@@ -45,7 +46,7 @@ tree :: String -> Node
 tree = fromJust . parseMaybe nodeP
 
 sumMetadata :: Node -> Int
-sumMetadata = (+) `oN` sum <$> fmap sumMetadata . children <*> metadata
+sumMetadata = ((+) `on` sum) <$> fmap sumMetadata . children <*> metadata
 
 solve1 = sumMetadata . tree
 

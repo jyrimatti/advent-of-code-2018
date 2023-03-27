@@ -73,19 +73,19 @@ solution1 = (!! 10) . solve <$> input
 
 bar :: Int -> Int -> Int -> String -> S.Set String -> (S.Set String, Int, Int)
 bar = if' <$$$$$>>> (S.member <$$$$$>> arg54 <*< arg55)
-                <*< (const ... (argDrop .* (S.empty,,)) <$$$>> (if' <$$$>>> (== 0) .** arg31 <*< arg33 <*< arg31)
-                                                            <*< (if' <$$$>>> ((&&) <$$$>> ((>0) ... arg31) <*< (==0) ... arg32) <*< arg33 <*< arg32 ))
+                <*< (const ... (const .* (S.empty,,)) <$$$>> (if' <$$$>>> (== 0) .** arg31 <*< arg33 <*< arg31)
+                                                         <*< (if' <$$$>>> ((&&) <$$$>> ((>0) ... arg31) <*< (==0) ... arg32) <*< arg33 <*< arg32 ))
                 <*< ((,,) <$$$$$>>> (S.insert <$$$$$>> arg54 <*< arg55) <*< arg51 <*< arg52)
 
 foo :: (S.Set String, Int, Int) -> (Int,Map) -> (S.Set String, Int, Int)
-foo = bar <$$>>>>> snd3 ... arg1
-               <*< thd3 ... arg1
+foo = bar <$$>>>>> snd3 ... const
+               <*< thd3 ... const
                <*< fst ... arg2
                <*< M.toList . snd ... arg2
-               <*< fst3 ... arg1
+               <*< fst3 ... const
 
 quux :: Int -> Int -> Int
-quux = (+) <$$>> arg1 <*< (rem <$$>> (1000000000 -) ... arg1 <*< flip (-))
+quux = (+) <$$>> const <*< (rem <$$>> (1000000000 -) ... const <*< flip (-))
 
 baz :: [String] -> Int
 baz = uncurry quux . head . fmap ((,) <$> snd3 <*> thd3) . filter ((&&) <$> (> 0) . snd3 <*> (> 0) . thd3) . scanl foo (S.empty,0,0) . zip [0..] . process

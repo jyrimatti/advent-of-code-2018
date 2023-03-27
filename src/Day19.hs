@@ -159,7 +159,7 @@ bar = behave <$$$$>> ((!!!) <$$$$>> arg42 <*< arg43)
                  <*< (update' <$$$$>>> arg41 <*< fromIntegral ... arg43 <*< arg44)
 
 process :: Input -> Seq Instruction -> IP -> Registers -> (IP,Registers)
-process = ((,) <$$>> fromIntegral . succ ... (!) <*< arg1) <$$$$>> bar <*< val ... arg41
+process = ((,) <$$>> fromIntegral . succ ... (!) <*< const) <$$$$>> bar <*< val ... arg41
 
 baz :: Input -> Seq Instruction -> (IP, Registers) -> (IP, Registers)
 baz = uncurry .* process

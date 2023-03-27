@@ -63,7 +63,7 @@ data Result = Result {
 
 withGroupPower :: M.Map (Int, Int) Int -> Int -> [(Int, Int)] -> [Result]
 --withGroupPower ps size = fmap (\coord -> Result coord size $ groupPower ps size coord) . filter (legalCoordinatesFor size)
-withGroupPower = (.) <$$>> (fmap .) . flip . (Result <$$>>> arg1 <*< arg2 <*<) . flip . groupPower
+withGroupPower = (.) <$$>> (fmap .) . flip . (Result <$$>>> const <*< arg2 <*<) . flip . groupPower
                        <*< const (filter . legalCoordinatesFor)
 
 solve :: [Int] -> Int -> [(Int, Int)] -> Result

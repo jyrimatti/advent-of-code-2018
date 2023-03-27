@@ -30,6 +30,7 @@ import           Text.Megaparsec.Char      (char, space, string)
 import           Universum.VarArg ((...))
 import           Util
 import Data.Composition ((.***), (.*))
+import Universum (on)
 
 input :: IO String
 input = readFile  "input/input20.txt"
@@ -101,12 +102,12 @@ bar :: (a, Int) -> MapBuilder -> Bool
 bar = (<) <&>> snd <*< flip (-) 5 . width
 
 extendMap :: Coord -> MapBuilder -> MapBuilder
-extendMap = if' @Bool <$$>>> (allOf <$$>>>> (>4) . fst ... arg1 <*< foo <*< (>4) . snd ... arg1 <*< bar)
+extendMap = if' @Bool <$$>>> (allOf <$$>>>> (>4) . fst ... const <*< foo <*< (>4) . snd ... const <*< bar)
                          <*< arg2
                          <*< fmap (widen '#') . (widen <$> newrow <*> id) ... arg2
 
 mark :: Int -> Int -> Char
-mark = if' <$$>>> (==0) ... arg1
+mark = if' <$$>>> (==0) ... const
               <*< const2 '|'
               <*< const2 '-'
 
@@ -148,14 +149,14 @@ isBr (Br _)        = True
 isBr Empty         = False
 
 extend2 :: Part -> Coord -> MapBuilder -> (Coord,MapBuilder)
-extend2 = if' <$$>>> (== Empty) ... arg1
+extend2 = if' <$$>>> (== Empty) ... const
                  <*< (,) ... arg2 $
-          if' <$$>>> (== Br []) ... arg1
+          if' <$$>>> (== Br []) ... const
                  <*< (,) ... arg2 $
-          if' <$$>>> isBr ... arg1
+          if' <$$>>> isBr ... const
                  <*< ((.) <$$>> (extend <&>> Br . tail . branches <*< id)
                             <*< thd3 . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) ... ((,,) <&>> head . branches <*< id) )
-                 <*< ((compose4 <$$$$>>>> (baz <$$$$>>>> arg41 <*< (*2) ... arg43 <*< arg42 <*< (*2) ... arg44) <*< door <*< room <*< extendIfNeeded) <$$>>>> fst ... arg2 <*< snd ... arg2 <*< fst . coord ... arg1 <*< snd . coord ... arg1)
+                 <*< ((compose4 <$$$$>>>> (baz <$$$$>>>> arg41 <*< (*2) ... arg43 <*< arg42 <*< (*2) ... arg44) <*< door <*< room <*< extendIfNeeded) <$$>>>> fst ... arg2 <*< snd ... arg2 <*< fst . coord ... const <*< snd . coord ... const)
 
 baz :: Int -> Int -> Int -> Int -> a -> ((Int, Int),a)
 baz = (,) ... (,) <$$$$>> ((+) <$$$$>> arg41 <*< arg42) <*< ((+) <$$$$>> arg41 <*< arg42)
@@ -170,8 +171,8 @@ showMap = toLists
 nextLocs :: [(Int, Int)]
 nextLocs = [(-1,0),(0,-1),(0,1),(1,0)]
 
-xdx = (+) `oN` fst <$$$>> arg31 <*< arg33
-ydy = (+) `oN` snd <$$$>> arg31 <*< arg33
+xdx = ((+) `on` fst) <$$$>> arg31 <*< arg33
+ydy = ((+) `on` snd) <$$$>> arg31 <*< arg33
 
 inside :: (Int, Int) -> Map -> (Int, Int) -> Bool
 inside = allOf <$$$>>>> (>=0) ... xdx
@@ -185,27 +186,27 @@ isDoor = (`elem` ['-','|']) ... ( (... (,)) . (!) <$$$>>> arg32
                                                       <*< ydy)
 
 nextStates :: Coord -> Map -> [Coord]
-nextStates = ($) <$$>> fmap . ( (. both (*2)) .* bimap <$> (+) . fst <*> (+) . snd) ... arg1
+nextStates = ($) <$$>> fmap . ( (. both (*2)) .* bimap <$> (+) . fst <*> (+) . snd) ... const
                    <*< (`filter` nextLocs) .* ((&&) <$$$>> isDoor <*< inside)
 
 pathToTarget :: Map -> Coord -> Coord -> Maybe [Coord]
 pathToTarget = fmap snd ... aStar <$$$>>>>> flip nextStates ... arg31
                                         <*< const5 1
-                                        <*< argDrop (argDrop quux)
+                                        <*< const (const quux)
                                         <*< (==) ... arg33
                                         <*< arg32
 
 quux :: (Int, Int) -> (Int, Int) -> Int
-quux = (+) <$$>> abs ... flip (-) `oN` fst
-             <*< abs ... flip (-) `oN` snd
+quux = (+) <$$>> abs ... (flip (-) `on` fst)
+             <*< abs ... (flip (-) `on` snd)
 
 findCoords :: Char -> Map -> [Coord]
 findCoords = filter (not . null) . concatMap (fmap <$> (,) . fst <*> snd) . zip [0..] ... fmap <&>> (V.toList ... V.findIndices . (==)) <*< toRows
 
 extendBranch :: [Part] -> (Int, Int) -> MapBuilder -> ([Part], (Int, Int), MapBuilder)
-extendBranch = if' <$$>>> null ... arg1
+extendBranch = if' <$$>>> null ... const
                       <*< (,,)
-                      <*< ((.) <$$>> uncurry . (,,) . tail ... arg1
+                      <*< ((.) <$$>> uncurry . (,,) . tail ... const
                                  <*< (extend <&>> head <*< id))
 
 initialMap :: MapBuilder

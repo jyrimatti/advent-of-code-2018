@@ -142,7 +142,7 @@ mkInstruction EqRR a b c = Instruction EqRR (reg a) (reg b) (reg c)
 
 matches :: (a, Integer, Integer, Integer) -> Registers -> Registers -> Opcode -> Bool
 matches = (==) <$$$$>> arg43
-                   <*< (behave <$$$$>> (mkInstruction <$$$$>>>> arg44 <*< t42 ... arg41 <*< t43 ... arg41 <*< t44 ... arg41)
+                   <*< (behave <$$$$>> (mkInstruction <$$$$>>>> arg44 <*< snd4 ... arg41 <*< thd4 ... arg41 <*< fth4 ... arg41)
                                    <*< arg42)
 
 solve1 = length . filter (>= 3) . fmap (length . filter id . flip fmap opcodes . uncurry3 matches) . parseData
@@ -153,7 +153,7 @@ solution1 = solve1 <$> input
 
 baz :: (t, Integer, Integer, Integer) -> Registers -> Registers -> [Maybe (t, Opcode)]
 baz = flip fmap opcodes .** (if' <$$$$>>> matches
-                                         <*< (Just ... (,) <$$$$>> t41 ... arg41 <*< arg44)
+                                         <*< (Just ... (,) <$$$$>> fst4 ... arg41 <*< arg44)
                                          <*< const4 Nothing) -- uuh...
 
 opcodeCandidates :: [String] -> [[(Int, Opcode)]]
@@ -167,9 +167,9 @@ foo :: (Eq a, Eq b) => [[(a, b)]] -> [[(a, b)]]
 foo = sortOn length . filter (not . null) ... fmap . uncurry quux <$> head . head <*> tail
 
 bar :: (Eq a, Eq b) => [[(a, b)]] -> [(a, b)] -> ([[(a, b)]], [(a, b)])
-bar = if' <$$>>> null ... arg1
+bar = if' <$$>>> null ... const
              <*< (,)
-             <*< ( (,) <$$>> foo .* arg1
+             <*< ( (,) <$$>> foo .* const
                          <*< ( (:) <&>> head . head <*< id) )
 
 matchOpcodes :: [String] -> [(Int, Opcode)]

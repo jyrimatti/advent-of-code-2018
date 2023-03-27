@@ -33,8 +33,8 @@ data Game = Game {
 makeLenses ''Game
 
 gameP :: Parser Game
-gameP = ( ($ 0) . ($ 0) . ($ 0) . ($ S.empty) <$$>> Game <*< flip S.replicate 0 ... arg1 ) <$> (decimal <* string " players; last marble is worth ")
-                                                                                           <*> (decimal <* string " points")
+gameP = ( ($ 0) . ($ 0) . ($ 0) . ($ S.empty) <$$>> Game <*< flip S.replicate 0 ... const ) <$> (decimal <* string " players; last marble is worth ")
+                                                                                            <*> (decimal <* string " points")
 
 type Parser = Parsec () String
 

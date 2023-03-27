@@ -11,6 +11,7 @@ import Data.Tuple.Extra (both)
 import Prelude          hiding (head, length, replicate, take, (!!))
 import Universum.VarArg ((...))
 import Util
+import Universum (on)
 
 depth :: Int
 depth = 6084
@@ -52,7 +53,7 @@ solve :: RiskLevels
 solve = fmap riskLevel <$> foldl reducer initRiskLevels allCoords
 
 reducer :: RiskLevels -> Coordinate -> RiskLevels
-reducer = adjust' <$$>>> (update <$$>> fst ... arg2 <*< erosion) <*< snd ... arg2 <*< arg1
+reducer = adjust' <$$>>> (update <$$>> fst ... arg2 <*< erosion) <*< snd ... arg2 <*< const
 
 solve1 :: Int
 solve1 = sum $ sum . take (fst target + 1) <$> take (snd target + 1) solve
@@ -90,8 +91,8 @@ neighbours = compose3 <$> concatMap . (zip <$$>> repeat ... arg2 <*< properGear)
                       <*> filter . inside
                       <*> const (next . fst)
 
-foo :: RiskLevels -> ((Int, Int), Equipment) -> ((Int, Int), Equipment) -> Bool
-foo = (&&) <$$$>> argDrop ((/=) `oN` snd)
+foo :: RiskLevels -> (Coordinate, Equipment) -> (Coordinate, Equipment) -> Bool
+foo = (&&) <$$$>> const ((/=) `on` snd)
               <*< (elem <$$$>> snd ... arg33 <*< (properGear <$$$>> arg31 <*< fst ... arg32) )
 
 cost :: RiskLevels -> (Coordinate, Equipment) -> (Coordinate, Equipment) -> Int
@@ -99,7 +100,7 @@ cost = if' <$$$>>> foo
                <*< const3 (1+7) $
        if' <$$$>>> flip2 foo
                <*< const3 (1+7) $
-       if' <$$$>>> argDrop ((==) `oN` snd)
+       if' <$$$>>> const ((==) `on` snd)
                <*< const3 1
                <*< const3 9999999999
 

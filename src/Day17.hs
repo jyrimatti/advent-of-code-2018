@@ -29,9 +29,9 @@ input = lines <$> readFile  "input/input17.txt"
 type Parser = Parsec () String
 
 build :: a -> Int -> Maybe Int -> (a, [Int])
-build = (,) <$$$>> arg31 <*< argDrop (maybe <$$>>> singleton ... arg1
-                                               <*< enumFromTo ... arg1
-                                               <*< arg2)
+build = (,) <$$$>> arg31 <*< const (maybe <$$>>> singleton ... const
+                                             <*< enumFromTo ... const
+                                             <*< arg2)
 
 coordOrRangeP :: Parser (Char, [Int])
 coordOrRangeP = build <$> (char 'x' <|> char 'y') <*> (char '=' *> decimal) <*> optional (string ".." *> decimal)
@@ -64,7 +64,7 @@ qux :: Int -> Int -> [Coord] -> Substance
 qux = maybe Empty fst3 ... foo
 
 middle :: [Coord] -> Int -> Seq Substance
-middle = S.fromFunction <$$>> succ . ((+) <$> minimum <*> maximum) . fmap snd3 ... arg1
+middle = S.fromFunction <$$>> succ . ((+) <$> minimum <*> maximum) . fmap snd3 ... const
                           <*< flip (flip . flip qux) -- (\a b c -> qux c b a)
 
 mkMap :: [Coord] -> Map
@@ -96,7 +96,7 @@ set = S.adjust' <$$>> S.update . fst
 wetLeft :: (Int, Int) -> Map -> Bool
 wetLeft = (||) <$$>> (== Clay) ... substance
                  <*< (allOf <$$>>> (`elem` [Water,Retained]) ... substance
-                               <*< (>0) . fst ... arg1
+                               <*< (>0) . fst ... const
                                <*< wetLeft . left)
 
 wetRight :: (Int, Int) -> Map -> Bool
@@ -108,29 +108,29 @@ wetRight = (||) <$$>> (== Clay) ... substance
 retainLeft :: (Int, Int) -> Map -> Map
 retainLeft = if' <$$>>> (== Clay) ... substance
                     <*< arg2
-                    <*< (retainLeft <$$>> left ... arg1 <*< (`set` Retained))
+                    <*< (retainLeft <$$>> left ... const <*< (`set` Retained))
 
 retainRight :: (Int, Int) -> Map -> Map
 retainRight = if' <$$>>> (== Clay) ... substance
                     <*< arg2
-                    <*< (retainRight <$$>> right ... arg1 <*< (`set` Retained))
+                    <*< (retainRight <$$>> right ... const <*< (`set` Retained))
 
 watery :: (Int,Int) -> Map -> Map
-watery = if' <$$>>> ((||) <$$>> (<0) . snd ... arg1 <*< ( (>=) <&>> snd <*< height))
+watery = if' <$$>>> ((||) <$$>> (<0) . snd ... const <*< ( (>=) <&>> snd <*< height))
                 <*< arg2 $
-         if' <$$>>> ((||) <$$>> (<0) . snd ... arg1 <*< ( (==) <&>> snd <*< pred . height))
+         if' <$$>>> ((||) <$$>> (<0) . snd ... const <*< ( (==) <&>> snd <*< pred . height))
                 <*< flip set Water $
-         if' <$$>>> ((||) <$$>> (<0) . fst ... arg1 <*< ( (>=) <&>> fst <*< width))
+         if' <$$>>> ((||) <$$>> (<0) . fst ... const <*< ( (>=) <&>> fst <*< width))
                 <*< arg2 $
          if' <$$>>> (== Spring) ... substance
                 <*< watery . down $
          if' <$$>>> (`elem` [Clay, Water, Retained]) ... substance
                 <*< arg2
-                <*< (blah <$$>> arg1 <*< (quux <$$>> arg1 <*< (baz <$$>> arg1 <*< bar)))
+                <*< (blah <$$>> const <*< (quux <$$>> const <*< (baz <$$>> const <*< bar)))
 
 blah :: (Int, Int) -> Map -> Map
 blah = if' <$$>>> ((&&) <$$>> wetLeft <*< wetRight)
-              <*< (retainLeft <$$>> arg1 <*< retainRight)
+              <*< (retainLeft <$$>> const <*< retainRight)
               <*< arg2
 
 bar :: (Int, Int) -> Map -> Map
@@ -149,7 +149,7 @@ quux :: (Int, Int) -> Map -> Map
 quux = if' <$$>>> ((&&) <$$>> verticallyInside
                           <*< ( (||) <$$>> (== Clay) ... substance . down
                                        <*< ( (&&) <$$>> wetLeft . down <*< wetRight . down)))
-              <*< (watery <$$>> left ... arg1 <*< watery . right)
+              <*< (watery <$$>> left ... const <*< watery . right)
               <*< arg2
 
 verticallyInside :: (Int, Int) -> Seq a -> Bool

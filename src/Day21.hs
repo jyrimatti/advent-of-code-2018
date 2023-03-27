@@ -127,16 +127,16 @@ behave (Instruction EqRI a b c) regs = if regs `V.unsafeIndex` fromIntegral a ==
 behave (Instruction EqRR a b c) regs = if regs `V.unsafeIndex` fromIntegral a ==  regs `V.unsafeIndex` fromIntegral b then 1 else 0
 
 behave2 :: Instruction -> Registers -> Registers
-behave2 = update' <$$>>> c ... arg1 <*< behave <*< arg2
+behave2 = update' <$$>>> c ... const <*< behave <*< arg2
 
 type IP = Integer
 
 process :: Input -> Instructions -> (IP,Registers) -> (IP,Registers)
-process = (.) <$$>> ((,) <$$>> succ ... flip V.unsafeIndex . fromIntegral <*< arg2) ... arg1
-                <*< (behave2 <$$$>> (. fromIntegral . fst) . VB.unsafeIndex ... arg2 <*< uncurry . update' ... arg1)
+process = (.) <$$>> ((,) <$$>> succ ... flip V.unsafeIndex . fromIntegral <*< arg2) ... const
+                <*< (behave2 <$$$>> (. fromIntegral . fst) . VB.unsafeIndex ... arg2 <*< uncurry . update' ... const)
 
 solv :: Registers -> Input -> Instructions -> [(IP, Registers)]
-solv = iterate' <$$$>> argDrop process <*< (0,) ... arg31
+solv = iterate' <$$$>> const process <*< (0,) ... arg31
 
 solve1 :: [String] -> Register
 solve1 = (V.! 5) . snd . head . dropWhile ((/= 28) . fst) . uncurry (solv (V.fromList [0,0,0,0,0,0])) . second mkInstructions . parseData
@@ -147,7 +147,7 @@ solution1 = solve1 <$> input
 
 bar :: (Set Register, [Register]) -> Register -> (Set Register, [Register])
 bar = if' <$$>>> (flip member <&>> fst <*< id)
-             <*< (,[]) . fst ... arg1
+             <*< (,[]) . fst ... const
              <*< ((,) <$$>> (flip insert <&>> fst <*< id) <*< (flip (:) <&>> snd <*< id))
 
 solve2 :: [String] -> Register

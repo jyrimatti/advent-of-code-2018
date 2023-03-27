@@ -61,7 +61,7 @@ carts = V.fromList . fmap (uncurry (Cart Right)) . catMaybes . concat . M.toList
 
 move :: Coordinate -> Coordinate -> Coordinate
 --move (r,c) (dr,dc) = (r + dr,c + dc)
-move = (,) <$$>> (+) `oN` fst <*< (+) `oN` snd
+move = (,) <$$>> ((+) `on` fst) <*< ((+) `on` snd)
 
 -- keep collided as-is
 action :: Cart -> Char -> Cart
@@ -98,7 +98,7 @@ action (Cart Straight '>' l) '+'  = Cart Right    'v' $ move l ( 1, 0)
 action (Cart Right    '>' l) '+'  = Cart Left     '^' $ move l (-1, 0)
 -}
 
-action = if' <$$>>> (== 'x') . _direction ... arg1 <*< arg1 $
+action = if' <$$>>> (== 'x') . _direction ... const <*< const $
          if' <$$>>> match '^' '|' <*< justMove (-1, 0) $
          if' <$$>>> match 'v' '|' <*< justMove ( 1, 0) $
          if' <$$>>> match '<' '-' <*< justMove ( 0,-1) $

@@ -48,7 +48,7 @@ nanobot :: String -> Nanobot
 nanobot = fromJust ... parseMaybe nanobotP
 
 manhattan :: Coord -> Coord -> Int
-manhattan = sumOf `oN3` abs <$$>>> (-) `oN` fst3 <*< (-) `oN` snd3 <*< (-) `oN` thd3
+manhattan = (sumOf `onn` abs) <$$>>> ((-) `on` fst3) <*< ((-) `on` snd3) <*< ((-) `on` thd3)
 
 solve1 :: [String] -> Int
 solve1 = length . (filter <$> (>=) . radius . fst <*> uncurry fmap . first (manhattan . pos)) . (maximumBy (comparing radius) &&& fmap pos) . fmap nanobot
@@ -77,9 +77,9 @@ coords = (filter .* flip (.)) <$> manhattan . pos
 coords2 :: Coord -> Nanobot -> [Coord]
 coords2 = (filter .* flip (.)) <$$>>> manhattan . pos ... arg2
                                      <*< flip (<=) . radius ... arg2
-                                     <*< (liftA3 (,,) <$$>>> (limitedRange <$$>>> fst3 . pos ... arg2 <*< fst3 ... arg1 <*< radius ... arg2)
-                                                         <*< (limitedRange <$$>>> snd3 . pos ... arg2 <*< snd3 ... arg1 <*< radius ... arg2)
-                                                         <*< (limitedRange <$$>>> thd3 . pos ... arg2 <*< thd3 ... arg1 <*< radius ... arg2))
+                                     <*< (liftA3 (,,) <$$>>> (limitedRange <$$>>> fst3 . pos ... arg2 <*< fst3 ... const <*< radius ... arg2)
+                                                         <*< (limitedRange <$$>>> snd3 . pos ... arg2 <*< snd3 ... const <*< radius ... arg2)
+                                                         <*< (limitedRange <$$>>> thd3 . pos ... arg2 <*< thd3 ... const <*< radius ... arg2))
 
 minimumsBy :: (Eq a, Ord b) => (a -> b) -> [a] -> [a]
 minimumsBy = nub . head ... (.) <$> groupOn <*> sortOn
@@ -137,12 +137,12 @@ botlines :: Nanobot -> [(Coord,Coord)]
 botlines = bar ... filter <$> (/=) . pos <*> (filter <$> quux . pos <*> botlines2)
 
 quux :: Coord -> Coord -> Bool
-quux = anyOf <$$>>> ((&&) <$$>> (==) `oN` fst3 <*< (==) `oN` snd3)
-                <*< ((&&) <$$>> (==) `oN` fst3 <*< (==) `oN` thd3)
-                <*< ((&&) <$$>> (==) `oN` snd3 <*< (==) `oN` thd3)
+quux = anyOf <$$>>> ((&&) <$$>> ((==) `on` fst3) <*< ((==) `on` snd3))
+                <*< ((&&) <$$>> ((==) `on` fst3) <*< ((==) `on` thd3))
+                <*< ((&&) <$$>> ((==) `on` snd3) <*< ((==) `on` thd3))
 
 atLeastOneEqual :: Coord -> Coord -> Bool
-atLeastOneEqual = anyOf <$$>>> (==) `oN` fst3 <*< (==) `oN` snd3 <*< (==) `oN` thd3
+atLeastOneEqual = anyOf <$$>>> ((==) `on` fst3) <*< ((==) `on` snd3) <*< ((==) `on` thd3)
 
 bar :: [Coord] -> [(Coord,Coord)]
 bar = filter (uncurry atLeastOneEqual) . filter (uncurry (/=)) . (liftA2 (,) <$> id <*> id)
@@ -181,7 +181,7 @@ intersects :: (Coord,Coord) -> (Coord,Coord) -> Bool
 intersects = (&&) <$$>> intersects_ <*< (intersects_ <&>> id <*< swap)
 
 blah :: Coord -> Coord -> Coord
-blah = (,,) <$$>>> (-) `oN` fst3 <*< (-) `oN` snd3 <*< (-) `oN` thd3
+blah = (,,) <$$>>> ((-) `on` fst3) <*< ((-) `on` snd3) <*< ((-) `on` thd3)
 
 -- uhh, this is a bit too heavy...
 intersects_ :: (Coord,Coord) -> (Coord,Coord) -> Bool
@@ -213,7 +213,7 @@ foo = (,) <$$>> flip inRangeOfBots . fmap nanobot <*< const (manhattan (0,0,0) &
 
 inp2 :: [String] -> [(Int, (Int, Coord))]
 inp2 = fmap <$> ((.) <$> (head . sortOn Down ... fmap . foo)
-                     <*> const ((++) `oN` singleton <$> fst <*> snd))
+                     <*> const (((++) `on` singleton) <$> fst <*> snd))
             <*> (($) <$> qux <*> foo1 100000000)
 
 -- What is the shortest manhattan distance between any of those points and 0,0,0?

@@ -73,9 +73,9 @@ isAlive = (> 0) . _hp
 
 toUnit :: (Int, Int) -> Char -> Maybe Unit
 toUnit = if' <$$>>> (== 'G') ... arg2
-                <*< Just . Unit 'G' 3 200 ... arg1 $
+                <*< Just . Unit 'G' 3 200 ... const $
          if' <$$>>> (== 'E') ... arg2
-                <*< Just . Unit 'E' 3 200 ... arg1
+                <*< Just . Unit 'E' 3 200 ... const
                 <*< const2 Nothing
 
 findUnits :: Map -> Units
@@ -140,13 +140,13 @@ pathToNearest = listToMaybe . sortOn (length &&& head) ... (mapMaybe .** pathToT
 update :: (Unit -> Unit) -> Unit -> Units -> (Units,Unit)
 update = (.) <$$>> flip (,) ... ($)
                <*< (S.adjust' <$$$>>> arg31
-                                  <*< fromJust ... argDrop S.elemIndexL
+                                  <*< fromJust ... const S.elemIndexL
                                   <*< arg33)
 
 newLocation :: Map -> Units -> Unit -> (Int, Int)
 newLocation = maybe <$$$>>> _location ... arg33
                         <*< const3 head
-                        <*< (($) <$$$>> pathToNearest <*< argDrop targetsFor)
+                        <*< (($) <$$$>> pathToNearest <*< const targetsFor)
 
 move :: Map -> Units -> Unit -> (Units,Unit)
 move = update <$$$>>> ((($) <$$$>>> arg31 <*< arg33 <*< arg33) .* (set location ... newLocation))
@@ -162,7 +162,7 @@ findTarget = head . sortOn (_hp &&& _location) ... (filter <$$>> inRange ... arg
 attack :: Units -> Unit -> Units
 attack = fst ... update <$$>>> over hp . (flip (-) <&>> _power <*< id) ... arg2
                            <*< findTarget
-                           <*< arg1
+                           <*< const
 
 isAdjacentToTarget :: Units -> Unit -> Bool
 isAdjacentToTarget = ($) <$$>> (elem . _location ... arg2)
@@ -171,28 +171,28 @@ isAdjacentToTarget = ($) <$$>> (elem . _location ... arg2)
 act :: Map -> Units -> Unit -> Units
 act = if' <$$$>>> not . isAlive ... arg33
               <*< arg32 $
-      if' <$$$>>> argDrop isAdjacentToTarget
-              <*< argDrop attack
+      if' <$$$>>> const isAdjacentToTarget
+              <*< const attack
               <*< uncurry afterMove ... move
 
 afterMove :: Units -> Unit -> Units
 afterMove = if' <$$>>> isAdjacentToTarget
                    <*< attack
-                   <*< arg1
+                   <*< const
 
 actUnit :: Map -> Units -> Int -> Units
-actUnit = act <$$$>>> arg31 <*< arg32 <*< argDrop S.index
+actUnit = act <$$$>>> arg31 <*< arg32 <*< const S.index
 
 round :: Map -> Units -> [Units]
 round = fmap (S.filter isAlive) ... take <$$>> length ... arg2
-                                           <*< tail . fmap fst ... (iterate' <&>> ((,) <$$>> uncurry . actUnit <*< argDrop (succ . snd))
+                                           <*< tail . fmap fst ... (iterate' <&>> ((,) <$$>> uncurry . actUnit <*< const (succ . snd))
                                                                               <*< (,0))
 
 allRounds :: Map -> Units -> [[Units]]
 allRounds = iterate' <&>> (. S.sortOn _location . last) . round <*< singleton
 
 mapAndUnits :: Int -> [String] -> (Map, Units)
-mapAndUnits = (. M.fromLists) . ((,) <$$>> argDrop withoutUnits <*< (. findUnits) . fmap . withElfPower)
+mapAndUnits = (. M.fromLists) . ((,) <$$>> const withoutUnits <*< (. findUnits) . fmap . withElfPower)
 
 unitTypesAtEndOfRound :: [Units] -> Int
 unitTypesAtEndOfRound = length . nub . fmap _unitType . toList . last
@@ -205,8 +205,8 @@ solve = ((,) <$> fst <*> head . dropWhile notCompleted . zip [0..] . uncurry all
 
 outcome :: (Int, [Seq Unit]) -> Int
 outcome = (*) <$> sum . fmap _hp . last . snd
-              <*> ((+) `oN` pred <$> fst
-                                 <*> unitTypesAtEndOfRound . init . snd)
+              <*> (((+) `on` pred) <$> fst
+                                   <*> unitTypesAtEndOfRound . init . snd)
 
 -- the number of full rounds that were completed (not counting the round in which combat ends) multiplied by the sum of the hit points of all remaining units at the moment combat ends.
 solution1 = outcome . snd . solve 3 <$> input
@@ -225,7 +225,7 @@ noElvesLost = (==) <&>> id
                     <*< length . S.filter isElf . last . snd
 
 elfsWinWithoutLosses :: Int -> (Int,[Units]) -> Bool
-elfsWinWithoutLosses = (&&) <$$>> argDrop onlyElvesRemain <*< noElvesLost
+elfsWinWithoutLosses = (&&) <$$>> const onlyElvesRemain <*< noElvesLost
 
 withElfWinStatus :: Int -> [String] -> ((Int, [Units]), Bool)
 withElfWinStatus = ((,) <$$>> arg2 <*< elfsWinWithoutLosses) <$$>> length . S.filter isElf . findUnits . M.fromLists ... arg2

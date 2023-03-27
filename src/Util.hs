@@ -2,11 +2,13 @@
 module Util where
 
 import Data.FoldApp (FoldrApp, foldrApp)
-import Data.Function                  ( on )
+import Data.Function                  ( on, (&) )
 import Data.Profunctor   (Profunctor, dimap)
 import Universum.VarArg ((...))
+import Control.Arrow
+import Control.Category (Category)
 
--- some Hackage additions:
+-- some additions:
 
 singleton :: a -> [a]
 singleton = (: [])
@@ -44,7 +46,6 @@ both3 f (a,b,c) = (f a, f b, f c)
 argDrop :: a -> b -> a
 argDrop = const
 
-arg1 a b = a
 arg2 a b = b
 arg3 a b c = c
 arg31 a b c = a
@@ -60,18 +61,37 @@ arg53 a b c d e = c
 arg54 a b c d e = d
 arg55 a b c d e = e
 
-t41 (a,b,c,d) = a
-t42 (a,b,c,d) = b
-t43 (a,b,c,d) = c
-t44 (a,b,c,d) = d
+fst4 :: (a, b, c, d) -> a
+fst4 (a,b,c,d) = a
 
-oN :: (b -> b -> c) -> (a -> b) -> a -> a -> c
-oN = on
-infixl 5 `oN`
+snd4 :: (a, b, c, d) -> b
+snd4 (a,b,c,d) = b
 
-oN3 :: (b -> b -> b -> c) -> (a -> b) -> a -> a -> a -> c
-oN3 f g a b c = f (g a) (g b) (g c)
-infixl 5 `oN3`
+thd4 :: (a, b, c, d) -> c
+thd4 (a,b,c,d) = c
+
+fth4 :: (a, b, c, d) -> d
+fth4 (a,b,c,d) = d
+
+
+
+onn :: (b -> b -> b -> c) -> (a -> b) -> a -> a -> a -> c
+onn f g = f <&>>> g <*< g <*< g
+infixl 0 `onn`
+
+onnn :: (b -> b -> b -> b -> c) -> (a -> b) -> a -> a -> a -> a -> c
+onnn f g = f <&>>>> g <*< g <*< g <*< g
+infixl 0 `onnn`
+
+-- f2 `on` f1
+-- ==
+-- f2 <&>> f1 <*< f1
+
+-- f3 `on3` f1
+-- ==
+-- f3 <&>>> f1 <*< f1 <*< f1
+
+
 
 -- Data.FoldApp has this, but does not export it...
 anyOf :: FoldrApp Bool Bool f => f
@@ -84,11 +104,12 @@ anyOf = foldrApp (||) False
 infixl 4 <*<
 
 
+
 -- some variations of "Applicative Functor of functions"
 
 
 
--- 1) each argument goes through its own function ("pipe")
+-- 1) each argument goes through its own function ("split") before the combining function
 
 --          (s -> t -> z)
 --  a - f1 -/    /
@@ -126,7 +147,41 @@ infixl 4 <&>>>>>
 
 
 
--- 2) all arguments go through all functions ("pipes")
+-- This any better? Naah...
+
+fooo2 :: (s -> t -> z) -> (a -> s) -> (b -> t) -> a -> b -> z
+fooo2 f f1 f2 = f <€> f1 <€>> f2
+
+baar2 :: (s -> t -> u -> z) -> (a -> s) -> (b -> t) -> (c -> u) -> a -> b -> c -> z
+baar2 f f1 f2 f3 = f <€> f1 <€>> f2 <€>>> f3
+
+baar3 :: (s -> t -> u -> v -> z) -> (a -> s) -> (b -> t) -> (c -> u) -> (d -> v) -> a -> b -> c -> d -> z
+baar3 f f1 f2 f3 f4 = f <€> f1 <€>> f2 <€>>> f3 <€>>>> f4
+
+
+(<€>) :: (b -> c) -> (a -> b) -> a -> c
+x <€> f = x . f
+infixr 2 <€>
+
+(<€>>) :: (a -> b -> c) -> (a1 -> b) -> a -> a1 -> c
+x <€>> f2 = x >>> (<<< f2)
+infixl 1 <€>>
+
+(<€>>>) :: (a -> a1 -> b -> c) -> (a2 -> b) -> a -> a1 -> a2 -> c
+x <€>>> f3 = x >>> ((<<< f3) <<<)
+infixl 1 <€>>>
+
+(<€>>>>) :: (a -> a1 -> a2 -> b -> c) -> (a3 -> b) -> a -> a1 -> a2 -> a3 -> c
+x <€>>>> f4 = x >>> (((<<< f4) .) .)
+infixl 1 <€>>>>
+
+
+
+
+-- 2) all arguments go through all functions ("replicate") before the combining function
+
+-- "Amount of dollars" indicates amount of arguments.
+-- "Amount of ending >" indicates amount of functions.
 
 --       (s -> z)
 --       /

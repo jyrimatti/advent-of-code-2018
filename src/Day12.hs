@@ -92,7 +92,7 @@ findTarget :: M.Map [State] Char -> [State] -> Char
 findTarget = fromMaybe '.' ... (M.!?)
 
 lookupOffset :: (Int -> Int) -> Seq Pot -> Int -> Pot
-lookupOffset f = fromJust ... (S.lookup <$$>> f ... arg2 <*< arg1)
+lookupOffset f = fromJust ... (S.lookup <$$>> f ... arg2 <*< const)
 
 mkList5 :: a -> a -> a -> a -> a -> [a]
 mkList5 = listOf

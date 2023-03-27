@@ -42,16 +42,16 @@ updateRecipie = over current <&>> modifier <*< id
 
 modifier :: Recipies -> Int -> Int
 modifier = mod <$$>> succ ... ((+) <$$>> arg2 <*< (!))
-                 <*< length ... arg1
+                 <*< length ... const
 
 updatedRecipies :: Recipies -> (Elf, Elf) -> Recipies
 --updatedRecipies recipies elves = case newRecipies recipies elves of
 --        [a,b] -> recipies |> a |> b
 --        [a]   -> recipies |> a
-updatedRecipies = (><) <$$>> arg1 <*< S.fromList ... newRecipies
+updatedRecipies = (><) <$$>> const <*< S.fromList ... newRecipies
 
 step :: Recipies -> (Elf,Elf) -> (Recipies,(Elf,Elf))
-step = ((,) <$$>> arg1 <*< (both <$$>> updateRecipie ... arg1 <*< arg2)) <$$>> updatedRecipies <*< arg2
+step = ((,) <$$>> const <*< (both <$$>> updateRecipie ... const <*< arg2)) <$$>> updatedRecipies <*< arg2
 
 foo2 :: Int -> S.Seq Int -> [Int]
 foo2 n seq = case S.viewr seq of
@@ -64,9 +64,9 @@ foo2 n seq = case S.viewr seq of
 --                         <*< (lastnReversed <&>> pred <*< id))
 
 lastnReversed :: Int -> Recipies -> [Int]
-lastnReversed = if' <$$>>> (== 0) ... arg1
+lastnReversed = if' <$$>>> (== 0) ... const
                        <*< const2 [] $
-                if' <$$>>> (== 1) ... arg1
+                if' <$$>>> (== 1) ... const
                        <*< maybeToList . (S.lookup <$> pred . length <*> id) ... arg2
                        <*< foo2
 

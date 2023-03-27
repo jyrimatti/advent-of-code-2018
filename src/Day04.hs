@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TypeApplications #-}
@@ -62,22 +61,22 @@ withPreviousGuardIfMissing :: [Record] -> Record -> Record
 withPreviousGuardIfMissing = over (field @"guard") <&>> flip (<|>) . guard . head <*< id
 
 withGuardId :: [Record] -> Record -> [Record]
-withGuardId = (:) <$$>> withPreviousGuardIfMissing <*< arg1
+withGuardId = (:) <$$>> withPreviousGuardIfMissing <*< const
 
 records :: [String] -> [Record]
 records = reverse . foldl withGuardId [] . fmap record . sort
 
 guardsMatch :: Maybe GuardId -> Maybe GuardId -> Bool
-guardsMatch = (&&) <$$>> (==) <*< (&&) `oN` isJust -- `on` but with higher fixity
+guardsMatch = (&&) <$$>> (==) <*< ((&&) `on` isJust)
 
 eventsMatch :: Event -> Event -> Bool
 eventsMatch = (&&) <&>> (== FallAsleep) <*< (== WakeUp)
 
 recordsMatch :: Record -> Record -> Bool
-recordsMatch = (&&) <$$>> guardsMatch `oN` guard <*< eventsMatch `oN` event
+recordsMatch = (&&) <$$>> (guardsMatch `on` guard) <*< (eventsMatch `on` event)
 
 minutesForGuard :: Record -> Record -> (GuardId, (Int, Int))
-minutesForGuard = (,) <$$>> fromJust . guard ... arg1 <*< (,) `oN` minute
+minutesForGuard = (,) <$$>> fromJust . guard ... const <*< ((,) `on` minute)
 
 newElement :: Record -> Record -> [(GuardId, (Int, Int))]
 newElement = if' <$$>>> recordsMatch

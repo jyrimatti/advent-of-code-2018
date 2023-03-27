@@ -59,7 +59,7 @@ performWork = if' <$$>>> flip elem
                      <*< const2 id
 
 determineStatus :: (Char -> Maybe Int -> Maybe Int) -> Rule -> Maybe Int
-determineStatus = ($) <$$>>> arg1
+determineStatus = ($) <$$>>> const
                          <*< fst3 ... arg2
                          <*< thd3 ... arg2
 

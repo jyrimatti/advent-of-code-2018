@@ -24,7 +24,7 @@ data Reaction = Reacted | Stable
 
 react :: Char -> (Reaction, String) -> (Reaction, String)
 react = if' <$$>>> (== "") . snd ... arg2
-               <*< ((,) <$$>> fst ... arg2 <*< singleton ... arg1) $
+               <*< ((,) <$$>> fst ... arg2 <*< singleton ... const) $
         if' <$$>>> ((==) <&>> toggleCase <*< head . snd)
                <*< (Reacted,) . tail . snd ... arg2 $
                    (,) <$$>> fst ... arg2 <*< ((:) <&>> id <*< snd)
@@ -42,7 +42,7 @@ solution1 = solve1 <$> input
 
 removeProblematic :: String -> String -> [String]
 --removeProblematic inp = fmap (\problematic -> filter ((/= problematic) . toLower) inp)
-removeProblematic = fmap . ( flip filter <&>> id <*< (. toLower) . flip (/=) )
+removeProblematic = fmap . ( flip filter <&>> id <*< (. toLower) . (/=) )
 
 solve2 :: String -> Int
 solve2 = minimum . fmap solve1 . (removeProblematic <$> id <*> (nub . fmap toLower))

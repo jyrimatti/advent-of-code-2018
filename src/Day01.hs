@@ -8,6 +8,8 @@ import Data.Maybe    (catMaybes, fromJust, isJust, isNothing,
                                 mapMaybe)
 import Data.Set      (Set, elemAt, empty, insert, lookupIndex, member)
 import Util
+import Control.Conditional (if')
+import Universum ((...))
 
 type Elem = Int
 
@@ -22,10 +24,8 @@ solution1 = sum <$> input
 -- 400
 
 
--- uuh, this is horible...
--- lookupIndex returns the _index_ of elem if it's there, but we wish to return Maybe Elem instead of Maybe Index
 findElem :: Elem -> Set Elem -> Maybe Elem
-findElem = fmap . const <$$>> arg1 <*< lookupIndex
+findElem = if' <$$>>> member <*< Just ... const <*< const2 Nothing
 
 markIfContains :: Elem -> Set Elem -> (Maybe Elem, Set Elem)
 markIfContains = (,) <$$>> findElem <*< insert

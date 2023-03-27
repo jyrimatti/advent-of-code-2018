@@ -30,32 +30,34 @@ coordinate = fromJust . parseMaybe coordinateP
 
 manhattan :: Coordinate -> Coordinate -> Int
 --manhattan (x1,y1) (x2,y2) = abs (x1-x2) + abs (y1-y2)
-manhattan = (+) `oN` abs <$$>> (-) `oN` fst <*< (-) `oN` snd
+manhattan = ((+) `on` abs) <$$>> ((-) `on` fst)
+                             <*< ((-) `on` snd)
 
 relevantWorld :: [Coordinate] -> (Coordinate, Coordinate)
 --relevantWorld = (minimum . fmap fst &&& minimum . fmap snd) &&& (maximum . fmap fst &&& maximum . fmap snd)
-relevantWorld = (,) <$> both minimum . unzip <*> both maximum . unzip
+relevantWorld = ((,) <$> both minimum <*> both maximum) . unzip
 
 -- "simple and easy" way to say: x==x1||x==x2||y==y1||y==y2
 comparators :: (Int, Int) -> (Int, Int) -> Int -> Int -> Bool
-comparators = anyOf <$$$$>>>> ((==) <$$$$>> arg43 <*< fst ... arg41)
-                          <*< ((==) <$$$$>> arg43 <*< fst ... arg42)
-                          <*< ((==) <$$$$>> arg44 <*< snd ... arg41)
-                          <*< ((==) <$$$$>> arg44 <*< snd ... arg42)
+comparators = anyOf <$$$$>>>> ((==) <$$$$>> arg43 <*< fst ... arg41) -- x == x1
+                          <*< ((==) <$$$$>> arg43 <*< fst ... arg42) -- x == x2
+                          <*< ((==) <$$$$>> arg44 <*< snd ... arg41) -- y == y1
+                          <*< ((==) <$$$$>> arg44 <*< snd ... arg42) -- y == y2
 
 allRelevantCoordinates :: Coordinate -> Coordinate -> [(Coordinate, Bool)]
 --allRelevantCoordinates (x1,y1) (x2,y2) = [((x,y),x==x1||x==x2||y==y1||y==y2) | x <- [x1..x2], y <- [y1..y2]]
 -- ugh, too difficult...
-allRelevantCoordinates = liftA2 . ((,) <$$>> (,) <*<) <$$>>> comparators <*< enumFromTo `oN` fst <*< enumFromTo `oN` snd
+allRelevantCoordinates = liftA2 . ((,) <$$>> (,) <*<) <$$>>> comparators <*< (enumFromTo `on` fst) <*< (enumFromTo `on` snd)
 
 pairwiseDistancesTo :: [Coordinate] -> [(Coordinate, Bool)] -> [([Int], Bool)]
+--pairwiseDistancesTo cs ccs = fmap (first $ (flip fmap cs) . manhattan) ccs
 pairwiseDistancesTo = fmap . first . (. manhattan) . flip fmap -- aaargh...
 
 removeElements :: [Int] -> [(Int, Bool)] -> [(Int, Bool)]
 removeElements = filter . (. fst) . flip notElem -- aaargh...
 
 havingExactMinimum :: ([Int], Bool) -> Bool
-havingExactMinimum = ((== 1) . length) . head . group . sort . fst
+havingExactMinimum = (== 1) . length . head . group . sort . fst
 
 indexOfMinimum :: [Int] -> Int
 indexOfMinimum = fst . minimumOn snd . zip [0..]

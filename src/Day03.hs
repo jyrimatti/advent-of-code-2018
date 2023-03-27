@@ -74,11 +74,12 @@ claimIds :: [IdsAndInches] -> [Int]
 claimIds = concatMap (fmap fst)
 
 claimIdsOfInchesWithClaims :: (Int -> Bool) -> [IdsAndInches] -> [Int]
---claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length)
---claimIdsOfInchesWithClaims = (claimIds .) . filter . (. length)
---claimIdsOfInchesWithClaims = dimap (. length) (claimIds .) filter   -- profunctor!
-claimIdsOfInchesWithClaims =  claimIds ... filter . (. length)  -- ... is function composition, but for functions >= 2 arguments
--- Think about it like this: We modify the filter function so, that
+--claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length)   -- readable, but not point-free
+--claimIdsOfInchesWithClaims = (claimIds .) . filter . (. length)                 -- kind of elegant, but difficult to comprehend
+--claimIdsOfInchesWithClaims = dimap (. length) (claimIds .) filter               -- profunctor makes this kind of understandable
+--claimIdsOfInchesWithClaims =  claimIds ... filter . (. length)                  -- "just transform the 1. arg to filter" but a bit difficult to graps how the data flows
+claimIdsOfInchesWithClaims = claimIds ... filter <&>> (. length) <*< id           -- "first arg (predicate) prefixed by length, second passed as-is"
+-- Think about the profunctor form like this: We modify the filter function so, that
 -- 1) we transform its input (the predicate) with length
 -- 2) we transform its output (function from list to list) with claimIds
 
