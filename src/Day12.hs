@@ -2,7 +2,7 @@
 module Day12 where
 
 import           Control.Conditional (if')
-import           Control.Lens hiding ((...),index,(<|),(|>),transform,both)
+import Control.Lens ( set, makeLenses )
 import           Data.Foldable                        (toList)
 import           Data.FoldApp (listOf)
 import           Data.List                            (iterate')
@@ -16,8 +16,9 @@ import           Text.Megaparsec            (Parsec, anySingle, many, optional,
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import           Util
+import Util ( (<$$>>), (<$$>>>), (<$$>>>>>>), (<&>>), (<*<), arg2 )
 
+input :: IO [String]
 input = lines <$> readFile "input/input12.txt"
 
 type State = Char
@@ -168,9 +169,11 @@ solve = getSum <&>> id
                 <*< takeUntilDuplicate . (iterate' <$> transformAll . notes <*> initState)
 
 -- After 20 generations, what is the sum of the numbers of all pots which contain a plant?
+solution1 :: IO Int
 solution1 = solve 20 <$> input
 -- 2917
 
 -- After fifty billion (50000000000) generations, what is the sum of the numbers of all pots which contain a plant?
+solution2 :: IO Int
 solution2 = solve 50000000000 <$> input
 -- 3250000000956

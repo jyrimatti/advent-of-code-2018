@@ -2,7 +2,7 @@
 module Day14 where
 
 import           Control.Conditional (if')
-import           Control.Lens hiding ((...),index,(<|),(|>),transform,both,anyOf,allOf)
+import Control.Lens ( over, makeLenses )
 import           Data.Foldable    (toList)
 import           Data.List        (isPrefixOf, isSuffixOf, iterate', tails)
 import           Data.Maybe (fromJust, maybeToList)
@@ -11,8 +11,17 @@ import           Data.Sequence    ((><), (|>))
 import           Data.Tuple.Extra (both)
 import           Prelude          hiding ((++))
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$>>),
+      (<$$>>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      compose3,
+      const2,
+      singleton )
 
+input :: Int
 input = 607331
 
 newtype Elf = Elf {
@@ -22,10 +31,13 @@ newtype Elf = Elf {
 makeLenses  ''Elf
 
 type Recipies = S.Seq Int
+(!) :: S.Seq a -> Int -> a
 (!) = S.index
 
+recipies :: S.Seq Int
 recipies = S.fromList [3,7]
 
+elves :: (Elf, Elf)
 elves = (Elf 0, Elf 1)
 
 toDigits :: Int -> [Int]
@@ -73,12 +85,14 @@ lastnReversed = if' <$$>>> (== 0) ... const
 bar :: Int -> [(S.Seq a, (b, b1))] -> S.Seq a
 bar = fst . fmap fst . head ... dropWhile . (. length . fst) . (>) . (+10)
 
+steps :: [(Recipies, (Elf, Elf))]
 steps = iterate' (uncurry step) (recipies, elves)
 
 solve1 :: Int -> String
 solve1 = (concatMap show ... (.) <$> S.drop <*> bar) <$> id <*> const steps
 
 -- What are the scores of the ten recipes immediately after the number of recipes in your puzzle input?
+solution1 :: String
 solution1 = solve1 input
 -- 8610321414
 
@@ -98,5 +112,6 @@ solve2 :: Int -> Int
 solve2 = flip (compose3 <$> flip (-) . length <*> quux2 <*> head ... dropWhile . quux3) (fmap fst steps) . reverse . toDigits
 
 -- How many recipes appear on the scoreboard to the left of the score sequence in your puzzle input?
+solution2 :: Int
 solution2 = solve2 input
 -- 20258123

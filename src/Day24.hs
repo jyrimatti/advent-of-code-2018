@@ -5,7 +5,7 @@ import           Algorithm.Search           (bfs)
 import           Control.Arrow              ((&&&))
 import           Control.Monad              ((>=>))
 import           Control.Monad.Combinators  (between, manyTill, sepBy)
-import           Data.Bifunctor             (bimap, first, second)
+import           Data.Bifunctor             (bimap, first, second, Bifunctor)
 import           Data.Foldable              (maximumBy, toList)
 import           Data.Function              (on)
 import           Data.List                  (cycle, delete, group, groupBy,
@@ -24,7 +24,7 @@ import           Data.Tuple                 (swap)
 import           Data.Tuple.Extra           (both, swap)
 import qualified Data.Vector                as V
 import           Data.Vector                (Vector)
-import           Debug.Trace
+import Debug.Trace ()
 import           Prelude                    hiding (Either (Left, Right), round)
 import           Text.Megaparsec            (Parsec, anySingle, many, optional,
                                              parse, try, (<|>))
@@ -32,9 +32,12 @@ import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal)
 
 
+inputLines :: FilePath -> IO [String]
 inputLines = fmap lines . readFile 
 
+input :: IO [String]
 input = inputLines "input/input24.txt"
+test :: IO [String]
 test  = inputLines "input/input24_test.txt"
 
 type AttackType = String
@@ -78,8 +81,10 @@ army lines = let
   in
     fmap (either undefined id . parse (groupP name) "") . tail $ lines
 
+effectivePower :: Group -> Int
 effectivePower = (*) <$> units <*> damage
 
+enemyGroups :: String -> [Group] -> [Group]
 enemyGroups n = filter ((/= n) . armyName)
 
 dealDamage :: Group -> Group -> Int
@@ -126,23 +131,30 @@ bar ((a,Just d) :<| remaining,defended) = let
 step :: [Group] -> [Group]
 step = attackPhase . targetSelectionPhase
 
+boost :: Int -> ([Group], c) -> ([Group], c)
 boost amount = first (fmap (\g -> g { damage = damage g + amount }))
 
+skipWhileAdvancing :: [[Group]] -> [[Group]]
 skipWhileAdvancing = fmap snd . dropWhile (uncurry (/=)) . (zip <$> id <*> tail)
 
+onlySingleArmy :: [Group] -> Bool
 onlySingleArmy = (== 1) . length . nub . fmap armyName
 
 solve1 :: Int -> [String] -> [Group]
 solve1 boostAmount = concat . take 1 . takeWhile onlySingleArmy . skipWhileAdvancing . iterate' step . uncurry (<>) . boost boostAmount . both army . second tail . span (/= "")
 
 -- how many units would the winning army have?
+solution1 :: IO Int
 solution1 = sum . fmap units . solve1 0 <$> input
 -- 14000
 
+sameArmy :: [Group] -> [Group] -> Bool
 sameArmy a b = nub (fmap armyName a) == nub (fmap armyName b)
 
+solve2 :: [String] -> Int
 solve2 = sum . fmap units . head . (!! 1) . groupBy sameArmy . filter (not . null) . traverse solve1 [0..]
 
 -- How many units does the immune system have left
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 6149

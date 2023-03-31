@@ -7,8 +7,9 @@ import Data.Char           (isUpper, toLower, toUpper)
 import Data.List           (find, iterate', nub)
 import Data.Maybe          (fromJust, fromMaybe)
 import Universum.VarArg               ( (...) )
-import Util
+import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, singleton )
 
+input :: IO String
 input = readFile "input/input05.txt"
 
 toggleCase :: Char -> Char
@@ -36,6 +37,7 @@ solve1 :: String -> Int
 solve1 = length . snd . fromJust . find ((== Stable) . fst) . iterate' act . (Reacted,)
 
 -- How many units remain after fully reacting the polymer you scanned?
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 10762
 
@@ -48,5 +50,6 @@ solve2 :: String -> Int
 solve2 = minimum . fmap solve1 . (removeProblematic <$> id <*> (nub . fmap toLower))
 
 -- What is the length of the shortest polymer you can produce
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 6946

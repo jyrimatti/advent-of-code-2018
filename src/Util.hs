@@ -5,7 +5,7 @@ import Data.FoldApp (FoldrApp, foldrApp)
 import Data.Function                  ( on, (&) )
 import Data.Profunctor   (Profunctor, dimap)
 import Universum.VarArg ((...))
-import Control.Arrow
+import Control.Arrow ( (<<<), (>>>) )
 import Control.Category (Category)
 
 -- some additions:

@@ -7,6 +7,7 @@ import Data.Tuple.Extra  (both)
 import Text.EditDistance (defaultEditCosts, levenshteinDistance)
 
 
+input :: IO [String]
 input = lines <$> readFile "input/input02.txt"
 
 frequencies :: String -> [Int]
@@ -21,6 +22,7 @@ solve1 = uncurry (*) . both (length . filter (== True)) . unzip . fmap relevantL
 -- uncurry (*) is same as: ((*) <$> fst <*> snd)
 
 -- What is the checksum
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 5658
 
@@ -38,5 +40,6 @@ solve2 :: [String] -> String
 solve2 = uncurry intersect . head . smallestDistances
 
 -- What letters are common between the two correct box IDs?
+solution2 :: IO String
 solution2 = solve2 <$> input
 -- nmgyjkpruszlbaqwficavxneo

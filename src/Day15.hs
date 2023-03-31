@@ -7,7 +7,8 @@ module Day15 where
 import           Algorithm.Search                     (bfs)
 import           Control.Arrow                        ((&&&))
 import           Control.Conditional (if')
-import           Control.Lens hiding ((...),index,(<|),(|>),transform,both,anyOf,allOf)
+import Control.Lens
+    ( Traversable(traverse), over, set, makeLenses )
 import           Data.Bifunctor                       (bimap, first, second)
 import           Data.Foldable                        (toList)
 import           Data.FoldApp (listOf)
@@ -30,7 +31,29 @@ import qualified Data.Vector                          as V
 import           Data.Vector                          (Vector)
 import           Prelude                              hiding (Either (Left, Right), round)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$$>>),
+      (<$$$$>>>),
+      (<$$$>>),
+      (<$$$>>>),
+      (<$$$>>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<$$>>>>),
+      (<&>>),
+      (<*<),
+      anyOf,
+      arg2,
+      arg31,
+      arg32,
+      arg33,
+      arg41,
+      arg42,
+      arg43,
+      arg44,
+      const2,
+      const3,
+      singleton )
 import Data.Composition ((.**), (.*))
 
 inputLines :: FilePath -> IO [String]
@@ -39,6 +62,7 @@ inputLines = fmap lines . readFile
 input :: IO [String]
 input = inputLines "input/input15.txt"
 
+test1, test2, test3, test4, test5, test6, test7 :: IO [String]
 test1 = inputLines "input/input15_test1.txt"
 test2 = inputLines "input/input15_test2.txt"
 test3 = inputLines "input/input15_test3.txt"
@@ -209,6 +233,7 @@ outcome = (*) <$> sum . fmap _hp . last . snd
                                    <*> unitTypesAtEndOfRound . init . snd)
 
 -- the number of full rounds that were completed (not counting the round in which combat ends) multiplied by the sum of the hit points of all remaining units at the moment combat ends.
+solution1 :: IO Int
 solution1 = outcome . snd . solve 3 <$> input
 -- 190777
 
@@ -232,7 +257,9 @@ withElfWinStatus = ((,) <$$>> arg2 <*< elfsWinWithoutLosses) <$$>> length . S.fi
                                                                <*< snd ... solve
 
 -- What is the outcome
+solution2 :: IO Int
 solution2 = outcome . fst . head . filter snd . traverse withElfWinStatus [4..] <$> input
 -- 47388
 
+tests :: IO [Int]
 tests = traverse (fmap $ outcome . snd . solve 3) [test1, test2, test3, test4, test5, test6, test7]

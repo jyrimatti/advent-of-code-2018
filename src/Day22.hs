@@ -6,11 +6,27 @@ import           Control.Conditional (if')
 import Data.Bifunctor (first, second)
 import           Data.FoldApp (allOf, listOf)
 import Data.Maybe       (fromJust)
-import Data.Sequence    hiding (filter, zip)
+import Data.Sequence
+    ( Seq, adjust', index, length, replicate, take, update )
 import Data.Tuple.Extra (both)
 import Prelude          hiding (head, length, replicate, take, (!!))
 import Universum.VarArg ((...))
 import Util
+    ( (<$$$>>),
+      (<$$$>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<$$>>>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      arg31,
+      arg32,
+      arg33,
+      compose3,
+      const2,
+      const3,
+      flip2 )
 import Universum (on)
 
 depth :: Int
@@ -59,6 +75,7 @@ solve1 :: Int
 solve1 = sum $ sum . take (fst target + 1) <$> take (snd target + 1) solve
 
 -- What is the total risk level for the smallest rectangle that includes 0,0 and the target's coordinates?
+solution1 :: Int
 solution1 = solve1
 -- 10603
 
@@ -105,5 +122,6 @@ cost = if' <$$$>>> foo
                <*< const3 9999999999
 
 -- What is the fewest number of minutes you can take to reach the target?
+solution2 :: Int
 solution2 = fst $ fromJust $ path solve
 -- 952

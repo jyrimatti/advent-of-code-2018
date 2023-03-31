@@ -17,8 +17,9 @@ import Text.Megaparsec            (Parsec, anySingle, many, optional,
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum.VarArg ((...))
-import Util
+import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, const2 )
 
+input :: IO [String]
 input = lines <$> readFile "input/input10.txt"
 
 type Coordinate = (Int,Int)
@@ -81,12 +82,15 @@ renderRow = fmap . (foldl1 combineRow .) . fmap . renderPoint
 render :: [Point] -> [String]
 render = renderRow <$> minMaxX <*> groupByY
 
+solve1 :: [String] -> [([Point], Int)]
 solve1 = fmap (id &&& horizontalVariance) . iterate (fmap ((<>) <$> id <*> id)) . fmap point
 
 -- What message will eventually appear in the sky?
+solution1 :: IO [String]
 solution1 = render . fst . head . dropWhile ((> 50) . snd) . solve1 <$> input
 -- LXJFKAXA
 
 -- exactly how many seconds would they have needed to wait for that message to appear?
+solution2 :: IO Integer
 solution2 = fst . head . dropWhile ((> 50) . snd . snd) . zip [0..] . solve1 <$> input
 -- 10312

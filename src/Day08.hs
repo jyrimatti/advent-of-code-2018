@@ -11,9 +11,10 @@ import Text.Megaparsec            (Parsec, anySingle, many, optional,
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum.VarArg ((...))
-import Util
+import Util ( (<$$>>), (<&>>), (<*<), arg2 )
 import Universum (on)
 
+input :: IO String
 input = readFile "input/input08.txt"
 
 data Header = Header {
@@ -65,12 +66,15 @@ mapToValueOfReferredChild = fmap . (value ... (!!) <&>> id <*< pred)
 metadataEntriesReferringToChild :: [a] -> [Int] -> [Int]
 metadataEntriesReferringToChild = filter . ((&&) <$$>> (> 0) ... arg2 <*< flip (<=) . length)
 
+solve2 :: String -> Int
 solve2 = value . tree
 
 -- What is the sum of all metadata entries?
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 46781
 
 -- What is the value of the root node?
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 21405

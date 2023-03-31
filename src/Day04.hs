@@ -25,11 +25,12 @@ import Text.Megaparsec            (Parsec, anySingleBut, many,
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum ((...), Generic)
-import Util
+import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), const2, singleton )
 import Data.Generics.Product (field)
 
 
 
+input :: IO [String]
 input = lines <$> readFile "input/input04.txt"
 
 data Event = BeginShift | FallAsleep | WakeUp
@@ -109,6 +110,7 @@ solve1 :: [String] -> Int
 solve1 = uncurry (*) . second (head . mostCommonMinute) . guardMostAsleep
 
 -- What is the ID of the guard you chose multiplied by the minute you chose?
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 77084
 
@@ -120,5 +122,6 @@ solve2 :: [String] -> Int
 solve2 = uncurry (*) . second head . guardMostFrequentlyAsleep
 
 -- What is the ID of the guard you chose multiplied by the minute you chose?
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 23047

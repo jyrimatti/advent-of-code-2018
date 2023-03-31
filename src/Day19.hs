@@ -22,13 +22,25 @@ import           Data.Sequence                        (Seq)
 import           Data.Tuple.Extra (uncurry3)
 import qualified Data.Vector.Unboxed                  as V
 import           Data.Vector.Unboxed                  (Vector)
-import           Numeric.Natural
+import Numeric.Natural ( Natural )
 import           Text.Megaparsec            (Parsec, anySingle, many, optional,
                                              parseMaybe, try, (<|>))
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$$>>),
+      (<$$$$>>>),
+      (<$$>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      arg41,
+      arg42,
+      arg43,
+      arg44,
+      singleton,
+      uncurry4 )
 import Data.Composition ((.*))
 
 input :: IO [String]
@@ -183,6 +195,7 @@ solve = (V.! 0) . snd ... firstStateAfterHalt <&>> V.fromList
                                                <*< bimap Reg mkInstructions . parseData
 
 -- What value is left in register 0
+solution1 :: IO Register
 solution1 = solve [0,0,0,0,0,0] <$> input
 -- 948
 
@@ -194,5 +207,6 @@ solve2 :: [String] -> Int
 solve2 = sum . factors . (! 4) . snd . (!! 100) . uncurry (solv (V.fromList [1,0,0,0,0,0])) . bimap Reg mkInstructions . parseData
 
 -- this time, register 0 started with the value 1. What value is left in register 0
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 10695960

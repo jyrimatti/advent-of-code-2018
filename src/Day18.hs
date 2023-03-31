@@ -13,7 +13,26 @@ import qualified Data.Set            as S
 import           Data.Tuple.Extra (both, fst3, snd3, thd3)
 import qualified Data.Vector.Unboxed as V
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$$$>>),
+      (<$$$$$>>>),
+      (<$$$>>),
+      (<$$$>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<$$>>>>),
+      (<$$>>>>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      arg31,
+      arg32,
+      arg33,
+      arg51,
+      arg52,
+      arg54,
+      arg55,
+      const2 )
 import Data.Composition ((.*), (.**))
 
 input :: IO [String]
@@ -68,6 +87,7 @@ solve :: [[Char]] -> [Int]
 solve = fmap (((*) <$> length . filter (== tree) <*> length . filter (== lumberyard)) . M.toList) . process
 
 -- What will the total resource value of the lumber collection area be after 10 minutes?
+solution1 :: IO Int
 solution1 = (!! 10) . solve <$> input
 -- 653184
 
@@ -91,8 +111,10 @@ baz :: [String] -> Int
 baz = uncurry quux . head . fmap ((,) <$> snd3 <*> thd3) . filter ((&&) <$> (> 0) . snd3 <*> (> 0) . thd3) . scanl foo (S.empty,0,0) . zip [0..] . process
 
 -- What will the total resource value of the lumber collection area be after 1000000000 minutes?
+solution2 :: IO Int
 solution2 = (!!) <$> solve <*> baz <$> input
 
 -- 169106
 
+debug :: Int -> IO ()
 debug i = fmap showMap . take i . process <$> input >>= mapM_ ((>> putStrLn "") . mapM_ putStrLn)

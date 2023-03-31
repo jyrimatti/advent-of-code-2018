@@ -5,7 +5,7 @@ module Day13 where
 
 import           Control.Arrow                        ((&&&))
 import           Control.Conditional (if')
-import           Control.Lens hiding ((...),index,(<|),(|>),transform,both,anyOf,allOf)
+import Control.Lens ( over, set, makeLenses )
 import           Data.Bifunctor                       (second)
 import           Data.FoldApp (allOf)
 import           Data.Function                        (on)
@@ -22,7 +22,35 @@ import qualified Data.Vector                          as V
 import           Data.Vector                          (Vector)
 import           Prelude                              hiding (Either (Left, Right))
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$$$>>),
+      (<$$$$$>>>),
+      (<$$$$>>),
+      (<$$$>>),
+      (<$$$>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<&>>),
+      (<&>>>),
+      (<&>>>>),
+      (<*<),
+      anyOf,
+      arg2,
+      arg31,
+      arg32,
+      arg33,
+      arg41,
+      arg42,
+      arg43,
+      arg44,
+      arg51,
+      arg52,
+      arg53,
+      arg54,
+      arg55,
+      compose3,
+      const2,
+      singleton )
 
 input :: IO [String]
 input = lines <$> readFile "input/input13.txt"
@@ -210,17 +238,21 @@ withoutCarts = M.map $ if' <$> (== '>') <*> const '-' <*> (
 solve :: [String] -> ([[Carts]], Map)
 solve = ( (,) ... ticks <$> withoutCarts <*> carts <*> withoutCarts) . M.fromLists
 
+solve1 :: [String] -> (Int, Int)
 solve1 = swap . _loc . fromJust . V.find collided . head . dropWhile (null . V.filter collided) . concat . fst . solve
 
 -- the location of the first crash
+solution1 :: IO (Int, Int)
 solution1 = solve1 <$> input
 -- 115,138
 
 hasMultipleCarts :: Carts -> Bool
 hasMultipleCarts = (> 1) . length . V.filter (not . collided)
 
+solve2 :: [String] -> (Int, Int)
 solve2 = swap . _loc . fromJust . V.find (not . collided) . last . head . dropWhile (hasMultipleCarts . last) . fst . solve
 
 -- What is the location of the last cart 
+solution2 :: IO (Int, Int)
 solution2 = solve2 <$> input
 -- 0,98

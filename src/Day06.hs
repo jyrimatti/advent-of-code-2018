@@ -15,7 +15,18 @@ import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum.VarArg               ( (...) )
 import Util
+    ( (<$$$$>>),
+      (<$$$$>>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<*<),
+      anyOf,
+      arg41,
+      arg42,
+      arg43,
+      arg44 )
 
+input :: IO [String]
 input = lines <$> readFile "input/input06.txt"
 
 type Parser = Parsec () String
@@ -75,6 +86,7 @@ solve1 :: [String] -> Int
 solve1 = largestArea . (removeElements <$> gatherInfinite <*> id) . fmap (first indexOfMinimum) . filter havingExactMinimum . distances
 
 -- What is the size of the largest area that isn't infinite?
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 5035
 
@@ -83,5 +95,6 @@ solve2 :: [String] -> Int
 solve2 = length . filter (<10000) . fmap (sum . fst) . distances
 
 -- What is the size of the region containing all locations which have a total distance to all given coordinates of less than 10000?
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 35294

@@ -20,7 +20,17 @@ import           Text.Megaparsec            (Parsec, anySingle, many, optional,
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$>>),
+      (<$$>>),
+      (<$$>>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      arg31,
+      arg32,
+      arg33,
+      singleton )
 import Data.Composition ((.*))
 
 input :: IO [String]
@@ -171,13 +181,17 @@ solve1 :: [String] -> Int
 solve1 = sum . fmap (length . S.findIndicesL (`elem` [Water,Retained])) . solve
 
 -- How many tiles can the water reach
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 39877
 
+solve2 :: [String] -> Int
 solve2 = sum . fmap (length . S.findIndicesL (== Retained)) . solve
 
 -- How many water tiles are left
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 33291
 
+debug :: IO [()]
 debug = showMap . process <$> input >>= mapM putStrLn

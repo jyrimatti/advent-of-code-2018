@@ -4,7 +4,7 @@ module Day09 where
 import           Control.Applicative.Combinators (count)
 import           Control.Arrow                        ((&&&))
 import           Control.Conditional (if')
-import           Control.Lens hiding ((...),index)
+import Control.Lens ( over, set, makeLenses )
 import           Data.List                            (iterate')
 import           Data.Maybe (fromJust)
 import qualified Data.Sequence                        as S
@@ -15,8 +15,9 @@ import           Text.Megaparsec            (Parsec, anySingle, many, optional,
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import           Util
+import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), arg2 )
 
+input :: IO String
 input = readFile "input/input09.txt"
 
 data Game = Game {
@@ -98,12 +99,15 @@ step = over round succ .
                  )
         ) <$> newIndex <*> id)
 
+solve1 :: Game -> Int
 solve1 = maximum . _scores . head . dropWhile ((<=) <$> _round <*> _rounds) . iterate' step
 
 -- What is the winning Elf's score?
+solution1 :: IO Int
 solution1 = solve1 . game <$> input
 -- 371284
 
 -- What would the new winning Elf's score be if the number of the last marble were 100 times larger?
+solution2 :: IO Int
 solution2 = solve1 . over rounds (*100) . game <$> input
 -- 3038972494

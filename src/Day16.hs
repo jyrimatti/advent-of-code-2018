@@ -22,13 +22,30 @@ import           Data.Ord                             (comparing)
 import qualified Data.Sequence                        as S
 import           Data.Sequence                        (Seq)
 import           Data.Tuple.Extra (uncurry3)
-import           Numeric.Natural
+import Numeric.Natural ( Natural )
 import           Text.Megaparsec            (Parsec, anySingle, many, optional,
                                              parseMaybe, try, (<|>))
 import           Text.Megaparsec.Char       (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$$>>),
+      (<$$$$>>>),
+      (<$$$$>>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<&>>),
+      (<*<),
+      arg41,
+      arg42,
+      arg43,
+      arg44,
+      const4,
+      fst4,
+      fth4,
+      snd4,
+      thd4,
+      uncurry4 )
 import Data.Composition ((.**), (.*))
 
 input :: IO [String]
@@ -84,6 +101,7 @@ data Opcode = AddR | AddI |
               EqIR | EqRI | EqRR
     deriving (Show,Eq,Ord)
 
+opcodes :: [Opcode]
 opcodes = [AddR,AddI,MulR,MulI,BanR,BanI,BorR,BorI,SetR,SetI,GtIR,GtRI,GtRR,EqIR,EqRI,EqRR]
 
 data Instruction = Instruction {
@@ -145,9 +163,11 @@ matches = (==) <$$$$>> arg43
                    <*< (behave <$$$$>> (mkInstruction <$$$$>>>> arg44 <*< snd4 ... arg41 <*< thd4 ... arg41 <*< fth4 ... arg41)
                                    <*< arg42)
 
+solve1 :: [String] -> Int
 solve1 = length . filter (>= 3) . fmap (length . filter id . flip fmap opcodes . uncurry3 matches) . parseData
 
 -- how many samples in your puzzle input behave like three or more opcodes
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 542
 
@@ -181,5 +201,6 @@ qux = fmap . uncurry4 . flip (mkInstruction . snd . head ... filter . (. fst) . 
 solve2 :: ([String], [String]) -> Integer
 solve2 = flip S.index 0 . fmap value . foldl (flip behave) (S.fromList $ fmap Register [0,0,0,0]) . uncurry qux . bimap matchOpcodes (fmap instr)
 
+solution2 :: IO Integer
 solution2 = solve2 <$> ((,) <$> input <*> input2)
 -- 575

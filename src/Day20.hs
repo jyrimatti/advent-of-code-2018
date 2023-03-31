@@ -28,7 +28,39 @@ import           Text.Megaparsec           (Parsec, anySingle, optional, parse,
                                             try, (<|>))
 import           Text.Megaparsec.Char      (char, space, string)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$$$>>),
+      (<$$$$$>>>),
+      (<$$$$>>),
+      (<$$$$>>>),
+      (<$$$$>>>>),
+      (<$$$>>),
+      (<$$$>>>),
+      (<$$$>>>>),
+      (<$$$>>>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<$$>>>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      arg31,
+      arg32,
+      arg33,
+      arg41,
+      arg42,
+      arg43,
+      arg44,
+      arg51,
+      arg52,
+      arg53,
+      arg54,
+      arg55,
+      compose3,
+      compose4,
+      const2,
+      const4,
+      const5 )
 import Data.Composition ((.***), (.*))
 import Universum (on)
 
@@ -63,7 +95,8 @@ instance Show Part where
 regexP :: Parser Regex
 regexP = between (char '^') (char '$') (many partP)
 
-branchP = (many (try partP) <|> ([Empty] <$ string "")) `sepBy` char '|'
+branchP :: Parser [[Part]]
+branchP = (many (try partP) <|> ([Empty] <$ string "")) `sepBy` char '|'
 
 partP :: Parser Part
 partP = try (Br        <$> between (char '(') (char ')') branchP) <|>
@@ -171,7 +204,9 @@ showMap = toLists
 nextLocs :: [(Int, Int)]
 nextLocs = [(-1,0),(0,-1),(0,1),(1,0)]
 
+xdx :: (Int, b) -> p2 -> (Int, b) -> Int
 xdx = ((+) `on` fst) <$$$>> arg31 <*< arg33
+ydy :: (a, Int) -> p2 -> (a, Int) -> Int
 ydy = ((+) `on` snd) <$$$>> arg31 <*< arg33
 
 inside :: (Int, Int) -> Map -> (Int, Int) -> Bool
@@ -229,5 +264,6 @@ solve = fmap (fromJust . snd) . shortestPaths . toMap
 
 -- What is the largest number of doors you would be required to pass through to reach a room?
 -- How many rooms have a shortest path from your current location that pass through at least 1000 doors?
+solution :: IO (Int, Int)
 solution = (maximum &&& length . filter (>= 1000)) . fmap length . solve <$> input
 -- (4239,8205)

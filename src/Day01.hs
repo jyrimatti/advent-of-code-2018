@@ -7,7 +7,7 @@ import Data.List     (find)
 import Data.Maybe    (catMaybes, fromJust, isJust, isNothing,
                                 mapMaybe)
 import Data.Set      (Set, elemAt, empty, insert, lookupIndex, member)
-import Util
+import Util ( (<$$>>), (<$$>>>), (<*<), const2 )
 import Control.Conditional (if')
 import Universum ((...))
 
@@ -20,6 +20,7 @@ parseElem :: String -> Elem
 parseElem = read . filter (/= '+')
 
 -- what is the resulting frequency
+solution1 :: IO Elem
 solution1 = sum <$> input
 -- 400
 
@@ -34,5 +35,6 @@ solve2 :: [Elem] -> Elem
 solve2 = head . mapMaybe fst . scanl (flip markIfContains . snd) (Nothing,empty) . scanl1 (+) . cycle
 
 -- What is the first frequency your device reaches twice?
+solution2 :: IO Elem
 solution2 = solve2 <$> input
 -- 232

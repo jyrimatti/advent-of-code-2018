@@ -11,11 +11,23 @@ import           Data.Maybe       (fromJust)
 import           Data.Tuple.Extra (both)
 import           Prelude          hiding (subtract)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<$$>>>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      arg31,
+      arg33 )
 
+input :: Int
 input = 6392
 
+x :: (a, b) -> a
 x = fst
+y :: (a, b) -> b
 y = snd
 
 rackID :: (Int, b) -> Int
@@ -69,14 +81,18 @@ withGroupPower = (.) <$$>> (fmap .) . flip . (Result <$$>>> const <*< arg2 <*<) 
 solve :: [Int] -> Int -> [(Int, Int)] -> Result
 solve = maximumOn power . concat ... (traverse <$$$>>> const (withGroupPower ... toPowerMap) <*< arg31 <*< arg33)
 
+solve1 :: Int -> [(Int, Int)] -> (Int, Int)
 solve1 serial = coord . solve [3] serial
 
 -- What is the X,Y coordinate of the top-left fuel cell of the 3x3 square with the largest total power?
+solution1 :: (Int, Int)
 solution1 = solve1 input $ grid (1, 300) (1, 300)
 -- 20,58
 
+solve2 :: Int -> [(Int, Int)] -> (Int, Int, Int)
 solve2 = ((,,) <$> fst . coord <*> snd . coord <*> size) ... solve [1..300]
 
 -- What is the X,Y,size identifier of the square with the largest total power?
+solution2 :: (Int, Int, Int)
 solution2 = solve2 input $ grid (1, 300) (1, 300)
 -- 233,268,13

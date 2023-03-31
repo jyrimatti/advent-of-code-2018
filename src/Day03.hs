@@ -5,7 +5,7 @@ import Control.Arrow              ((&&&))
 import Data.List                  (find, group, groupBy, sort, sortBy)
 import Data.List.Extra            (groupSortOn)
 import Data.Maybe                 (fromJust)
-import Data.Profunctor
+import Data.Profunctor ()
 import Data.Set                   as Set (fromList, notMember)
 import Data.Tuple.Extra           (snd3, thd3)
 import Text.Megaparsec            (Parsec, many, optional, parseMaybe, try,
@@ -13,9 +13,10 @@ import Text.Megaparsec            (Parsec, many, optional, parseMaybe, try,
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum ((...))
-import Util
+import Util ( (<&>>), (<*<) )
 
 
+input :: IO [Claim]
 input = fmap claim . lines <$> readFile "input/input03.txt"
 
 data Claim = Claim {
@@ -66,6 +67,7 @@ solve1 :: [Claim] -> Int
 solve1 = length . filter ((>=2) . length) . claimsOnInches
 
 -- How many square inches of fabric are within two or more claims?
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 110389
 
@@ -91,5 +93,6 @@ solve2 :: [Claim] -> Int
 solve2 = fromJust . findNonOverlapping . claimsOnInches
 
 -- What is the ID of the only claim that doesn't overlap?
+solution2 :: IO Int
 solution2 = solve2 <$> input
 -- 552

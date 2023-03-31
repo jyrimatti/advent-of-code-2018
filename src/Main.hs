@@ -29,10 +29,16 @@ import qualified Day24
 import qualified Day25
 
 
+day :: [Char] -> IO ()
 day d = putStrLn "" >> putStrLn "" >> (print =<< getCurrentTime) >> putStrLn ( "Day " ++ d ++ " ")
+
+half1 :: Show a => a -> IO ()
 half1 solution = putStr $ " half 1: " ++ show solution
+
+half2 :: Show a => a -> IO ()
 half2 solution = putStrLn "" >> putStr (" half 2: " ++ show solution)
 
+main :: IO ()
 main = do
     day "1"
     half1 =<< Day01.solution1

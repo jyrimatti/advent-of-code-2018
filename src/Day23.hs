@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module Day23 where
 
 import           Control.Applicative (liftA2,liftA3)
@@ -11,16 +10,33 @@ import           Data.List                  (groupBy, maximumBy, nub,
                                              permutations, sort, sortOn)
 import           Data.List.Extra (groupOn)
 import           Data.Maybe                 (catMaybes, fromJust)
-import           Data.Monoid
+import Data.Monoid ( Endo(Endo, appEndo) )
 import           Data.Ord                   (Down (..), Ord (..), comparing)
 import qualified Data.Set                   as S
-import           Data.Tuple.Extra           hiding (first, second, (&&&))
+import Data.Tuple.Extra ( swap, both, fst3, snd3, thd3, uncurry3 )
 import           Text.Megaparsec            (Parsec, optional, parse, parseMaybe, try,
                                              (<|>))
 import           Text.Megaparsec.Char       (char, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$>>),
+      (<$$$>>>),
+      (<$$>>),
+      (<$$>>>),
+      (<$$>>>>>>),
+      (<&>>),
+      (<&>>>),
+      (<*<),
+      anyOf,
+      arg2,
+      arg31,
+      arg32,
+      arg33,
+      both3,
+      onn,
+      singleton,
+      triple )
 import Data.Composition ((.*))
 
 input :: IO [String]
@@ -54,6 +70,7 @@ solve1 :: [String] -> Int
 solve1 = length . (filter <$> (>=) . radius . fst <*> uncurry fmap . first (manhattan . pos)) . (maximumBy (comparing radius) &&& fmap pos) . fmap nanobot
 
 -- How many nanobots are in range
+solution1 :: IO Int
 solution1 = solve1 <$> input
 -- 341
 
@@ -217,5 +234,6 @@ inp2 = fmap <$> ((.) <$> (head . sortOn Down ... fmap . foo)
             <*> (($) <$> qux <*> foo1 100000000)
 
 -- What is the shortest manhattan distance between any of those points and 0,0,0?
+solution2 :: IO Int
 solution2 = fst . snd . head . inp2 <$> input
 -- 105191907

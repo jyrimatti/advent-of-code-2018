@@ -31,7 +31,16 @@ import           Text.Megaparsec.Char            (char, letterChar, space,
                                                   string)
 import           Text.Megaparsec.Char.Lexer      (decimal, signed)
 import           Universum.VarArg ((...))
-import           Util
+import Util
+    ( (<$$$>>),
+      (<$$>>),
+      (<$$>>>),
+      (<&>>),
+      (<*<),
+      arg2,
+      arg31,
+      singleton,
+      uncurry4 )
 
 
 
@@ -142,6 +151,7 @@ solve1 :: [String] -> Register
 solve1 = (V.! 5) . snd . head . dropWhile ((/= 28) . fst) . uncurry (solv (V.fromList [0,0,0,0,0,0])) . second mkInstructions . parseData
 
 -- What is the lowest non-negative integer value for register 0 that causes the program to halt after executing the fewest instructions?
+solution1 :: IO Register
 solution1 = solve1 <$> input
 -- 2884703
 
@@ -154,5 +164,6 @@ solve2 :: [String] -> Register
 solve2 = head . snd . last . takeWhile (not . null . snd) . tail . scanl bar (empty,[]) . fmap ((V.! 5) . snd) . filter ((== 28) . fst) . uncurry (solv (V.fromList [0,0,0,0,0,0])) . second mkInstructions . parseData
 
 -- What is the lowest non-negative integer value for register 0 that causes the program to halt after executing the most instructions?
+solution2 :: IO Register
 solution2 = solve2 <$> input
 -- 15400966

@@ -8,15 +8,16 @@ import Data.List                  (delete, find, iterate', nub, sort)
 import Data.Maybe                 (fromJust, fromMaybe, isJust,
                                              isNothing)
 import Data.Tuple.Extra           (fst3, snd3, thd3)
-import Numeric.Natural
+import Numeric.Natural ()
 import Text.Megaparsec            (Parsec, anySingle, many, optional,
                                              parseMaybe, try, (<|>))
 import Text.Megaparsec.Char       (char, letterChar, space, string)
 import Text.Megaparsec.Char.Lexer (decimal, signed)
 import Universum.VarArg               ( (...) )
-import Util
+import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, const2 )
 
 
+input :: IO [String]
 input = lines <$> readFile "input/input07.txt"
 
 type Parser = Parsec () String
@@ -92,6 +93,7 @@ solve1 :: Int -> [String] -> String
 solve1 = fst . fromJust . find (null . snd) ... (act <&>> id <*< fmap step)
 
 -- In what order should the steps in your instructions be completed?
+solution1 :: IO String
 solution1 = solve1 1 <$> input
 -- CFMNLOAHRKPTWBJSYZVGUQXIDE
 
@@ -106,5 +108,6 @@ solve2 :: Int -> [String] -> Int
 solve2 = length . tail . takeWhile (not . null . snd) ... (act <&>> id <*< ((<>) <$> id <*> finalElement) . fmap step)
 
 -- how long will it take to complete all of the steps?
+solution2 :: IO Int
 solution2 = solve2 5 <$> input
 -- 971
