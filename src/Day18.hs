@@ -2,38 +2,23 @@
 module Day18 where
 
 import           Control.Applicative (liftA2)
-import           Control.Arrow       ((&&&))
-import           Control.Conditional (if',ToBool)
+import           Control.Arrow ((&&&))
+import           Control.Conditional (if', ToBool)
 import           Data.Bifunctor (bimap)
 import           Data.FoldApp (allOf)
-import           Data.List           (iterate')
+import           Data.List (iterate')
 import qualified Data.Matrix.Unboxed as M
 import           Data.Matrix.Unboxed (Matrix, (!))
-import qualified Data.Set            as S
+import qualified Data.Set as S
 import           Data.Tuple.Extra (both, fst3, snd3, thd3)
 import qualified Data.Vector.Unboxed as V
 import           Universum.VarArg ((...))
-import Util
-    ( (<$$$$$>>),
-      (<$$$$$>>>),
-      (<$$$>>),
-      (<$$$>>>),
-      (<$$>>),
-      (<$$>>>),
-      (<$$>>>>),
-      (<$$>>>>>),
-      (<&>>),
-      (<*<),
-      arg2,
-      arg31,
-      arg32,
-      arg33,
-      arg51,
-      arg52,
-      arg54,
-      arg55,
-      const2 )
-import Data.Composition ((.*), (.**))
+import           Util ((<$$$$$>>), (<$$$$$>>>), (<$$$>>), (<$$$>>>), (<$$>>)
+                     , (<$$>>>), (<$$>>>>), (<$$>>>>>), (<&>>), (<*<), arg2
+                     , arg31, arg32, arg33, arg51, arg52, arg54, arg55, const2
+                     , (<&), (&>))
+import           Data.Composition ((.*), (.**))
+
 
 input :: IO [String]
 input = lines <$> readFile  "input/input18.txt"
@@ -54,12 +39,12 @@ showMap = fmap V.toList . M.toColumns
 
 inrange :: Map -> (Int, Int) -> Bool
 inrange = allOf <$$>>>> (>= 0) . snd ... arg2
-                    <*< ((>) <&>> M.cols <*< snd)
+                    <*< M.cols &> (>) <& snd
                     <*< (>= 0) . fst ... arg2
-                    <*< ((>) <&>> M.rows <*< fst)
+                    <*< M.rows &> (>) <& fst
 
 adjacent :: (Int, Int) -> [(Int, Int)]
-adjacent = filter <$> (/=) <*> uncurry (flip fmap movements .* bimap) . both (flip ($))
+adjacent = filter <$> (/=) <*> uncurry ((<$> movements) .* bimap) . both (flip ($))
 
 movements :: [(Int -> Int, Int -> Int)]
 movements = both (+) <$> liftA2 (,) [-1,0,1] [-1,0,1]
@@ -93,7 +78,7 @@ solution1 = (!! 10) . solve <$> input
 
 bar :: Int -> Int -> Int -> String -> S.Set String -> (S.Set String, Int, Int)
 bar = if' <$$$$$>>> (S.member <$$$$$>> arg54 <*< arg55)
-                <*< (const ... (const .* (S.empty,,)) <$$$>> (if' <$$$>>> (== 0) .** arg31 <*< arg33 <*< arg31)
+                <*< (const ... (const .* (S.empty,,)) <$$$>> (if' <$$$>>> (== 0) ... arg31 <*< arg33 <*< arg31)
                                                          <*< (if' <$$$>>> ((&&) <$$$>> ((>0) ... arg31) <*< (==0) ... arg32) <*< arg33 <*< arg32 ))
                 <*< ((,,) <$$$$$>>> (S.insert <$$$$$>> arg54 <*< arg55) <*< arg51 <*< arg52)
 
@@ -105,7 +90,7 @@ foo = bar <$$>>>>> snd3 ... const
                <*< fst3 ... const
 
 quux :: Int -> Int -> Int
-quux = (+) <$$>> const <*< (rem <$$>> (1000000000 -) ... const <*< flip (-))
+quux = (+) <$$>> const <*< (rem <$$>> (1000000000 -) ... const <*< subtract)
 
 baz :: [String] -> Int
 baz = uncurry quux . head . fmap ((,) <$> snd3 <*> thd3) . filter ((&&) <$> (> 0) . snd3 <*> (> 0) . thd3) . scanl foo (S.empty,0,0) . zip [0..] . process
@@ -113,8 +98,7 @@ baz = uncurry quux . head . fmap ((,) <$> snd3 <*> thd3) . filter ((&&) <$> (> 0
 -- What will the total resource value of the lumber collection area be after 1000000000 minutes?
 solution2 :: IO Int
 solution2 = (!!) <$> solve <*> baz <$> input
-
 -- 169106
 
 debug :: Int -> IO ()
-debug i = fmap showMap . take i . process <$> input >>= mapM_ ((>> putStrLn "") . mapM_ putStrLn)
+debug = (>>= mapM_ ((>> putStrLn "") . mapM_ putStrLn)) . flip fmap input . ((fmap showMap .) . (. process) . take)

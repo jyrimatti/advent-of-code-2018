@@ -1,23 +1,22 @@
 module Day10 where
 
-import Control.Applicative.Combinators (count)
-import Control.Arrow                        ((&&&))
-import Control.Conditional (if')
-import Data.FoldApp (foldOf)
-import Data.Function                        (on)
-import Data.List                            (groupBy, nub, sort,
-                                                       sortBy, sortOn)
-import Data.List.Extra                      (groupOn, groupSortBy)
-import Data.Maybe (fromJust)
-import Data.Semigroup (Sum(..))
-import Data.Tuple                           (swap)
-import Data.Tuple.Extra                     (both, first)
-import Text.Megaparsec            (Parsec, anySingle, many, optional,
-                                             parseMaybe, try, (<|>))
-import Text.Megaparsec.Char       (char, letterChar, space, string)
-import Text.Megaparsec.Char.Lexer (decimal, signed)
-import Universum.VarArg ((...))
-import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, const2 )
+import           Control.Applicative.Combinators (count)
+import           Control.Arrow ((&&&))
+import           Control.Conditional (if')
+import           Data.FoldApp (foldOf)
+import           Data.Function (on)
+import           Data.List (groupBy, nub, sort, sortBy, sortOn)
+import           Data.List.Extra (groupOn, groupSortBy, groupSortOn)
+import           Data.Maybe (fromJust)
+import           Data.Semigroup (Sum(..))
+import           Data.Tuple (swap)
+import           Data.Tuple.Extra (both, first)
+import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum.VarArg ((...))
+import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, const2, (&>), (<&))
+
 
 input :: IO [String]
 input = lines <$> readFile "input/input10.txt"
@@ -31,7 +30,7 @@ data Point = Point {
 
 instance Semigroup Point where
     --Point (x,y) _ <> Point _ (vx,vy) = Point (x+vx,y+vy) (vx,vy)
-    (<>) = Point <$$>> (both getSum ... (<>) <&>> both Sum . position <*< both Sum . velocity)
+    (<>) = Point <$$>> both getSum ... (both Sum . position &> (<>) <& both Sum . velocity)
                    <*< velocity ... arg2
 
 type Parser = Parsec () String
@@ -41,7 +40,7 @@ coordinateP = (,) <$> (many (char ' ') *> signed space decimal <* char ',')
                   <*> (many (char ' ') *> signed space decimal)
 
 pointP :: Parser Point
-pointP = Point <$> (string "position=<" *> coordinateP)
+pointP = Point <$> (string   "position=<" *> coordinateP)
                <*> (string "> velocity=<" *> coordinateP) <* char '>'
 
 point :: String -> Point
@@ -51,27 +50,30 @@ horizontalVariance :: [Point] -> Int
 horizontalVariance = length . nub . sort . fmap (fst . position)
 
 groupByY :: [Point] -> [[Point]]
-groupByY = groupOn (snd . position) . sortOn (snd . position)
+groupByY = groupSortOn (snd . position)
 
 minMaxX :: [Point] -> (Int, Int)
 minMaxX = (minimum &&& maximum) . fmap (fst . position)
 
 leftPad :: Int -> Int -> String
-leftPad = ($ ' ') . replicate ... (+) <&>> negate <*< id
+leftPad = (`replicate` ' ') ... (negate &> (+) <& id)
 
 rightPad :: Int -> Int -> String
-rightPad = ($ ' ') . replicate ... (-) <&>> abs <*< id
+rightPad = (`replicate` ' ') ... (abs &> (-) <& id)
 
 renderPoint :: (Int, Int) -> Point -> String
-renderPoint = foldOf <$$>>> (leftPad  <&>> fst <*< fst . position)
+renderPoint = foldOf <$$>>> fst &> leftPad <& fst . position
                         <*< const2 "#"
-                        <*< (rightPad <&>> snd <*< fst . position)
+                        <*< snd &> rightPad <& fst . position
 
 combinePoint :: Char -> Char -> Char
 --combinePoint '#' _ = '#'
 --combinePoint _ '#' = '#'
 --combinePoint _ _   = ' '
-combinePoint = ($ ' ') . ($ '#') . if' ... (||) `on` (== '#')
+--combinePoint = ($ ' ') . ($ '#') . if' ... (||) `on` (== '#')
+combinePoint = if' <$$>> ((||) `on` (== '#'))
+                     <*< const2 '#' $
+                         ' '
 
 combineRow :: String -> String -> String
 combineRow = fmap (uncurry combinePoint) ... zip

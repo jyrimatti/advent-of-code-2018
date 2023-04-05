@@ -1,15 +1,16 @@
 module Day01 where
 
-import Control.Arrow ((&&&))
-import Control.Monad (when)
-import Data.Either   (fromLeft, isRight)
-import Data.List     (find)
-import Data.Maybe    (catMaybes, fromJust, isJust, isNothing,
-                                mapMaybe)
-import Data.Set      (Set, elemAt, empty, insert, lookupIndex, member)
-import Util ( (<$$>>), (<$$>>>), (<*<), const2 )
-import Control.Conditional (if')
-import Universum ((...))
+import           Control.Arrow ((&&&))
+import           Control.Conditional (if')
+import           Control.Monad (when)
+import           Data.Either (fromLeft, isRight)
+import           Data.List (find)
+import           Data.Maybe (catMaybes, fromJust, isJust, isNothing, mapMaybe)
+import           Data.Set (Set, elemAt, empty, insert, lookupIndex, member)
+import           Universum ((...))
+import           Util (const2, (<$$>>), (<$$>>>), (<*<))
+
+
 
 type Elem = Int
 
@@ -26,7 +27,9 @@ solution1 = sum <$> input
 
 
 findElem :: Elem -> Set Elem -> Maybe Elem
-findElem = if' <$$>>> member <*< Just ... const <*< const2 Nothing
+findElem = if' <$$>>> member
+                  <*< Just ... const
+                  <*< const2 Nothing
 
 markIfContains :: Elem -> Set Elem -> (Maybe Elem, Set Elem)
 markIfContains = (,) <$$>> findElem <*< insert

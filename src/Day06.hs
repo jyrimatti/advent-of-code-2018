@@ -1,30 +1,20 @@
 module Day06 where
 
-import Control.Applicative            ( liftA2 )
-import Control.Arrow              ((&&&))
-import Data.Bifunctor             (bimap)
-import Data.Function              (on)
-import Data.List                  (find, group, maximumBy, minimumBy,
-                                             nub, null, sort)
-import Data.List.Extra            (minimumOn)
-import Data.Maybe (fromJust)
-import Data.Tuple.Extra           (both, first, second)
-import Text.Megaparsec            (Parsec, anySingleBut, many,
-                                             optional, parseMaybe, try, (<|>))
-import Text.Megaparsec.Char       (char, letterChar, space, string)
-import Text.Megaparsec.Char.Lexer (decimal, signed)
-import Universum.VarArg               ( (...) )
-import Util
-    ( (<$$$$>>),
-      (<$$$$>>>>),
-      (<$$>>),
-      (<$$>>>),
-      (<*<),
-      anyOf,
-      arg41,
-      arg42,
-      arg43,
-      arg44 )
+import           Control.Applicative (liftA2)
+import           Control.Arrow ((&&&))
+import           Data.Bifunctor (bimap)
+import           Data.Function (on)
+import           Data.List (find, group, maximumBy, minimumBy, nub, null, sort)
+import           Data.List.Extra (minimumOn)
+import           Data.Maybe (fromJust)
+import           Data.Tuple.Extra (both, first, second)
+import           Text.Megaparsec (Parsec, anySingleBut, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum.VarArg ((...))
+import           Util ((<$$$$>>), (<$$$$>>>>), (<$$>>), (<$$>>>), (<*<), anyOf, arg41, arg42, arg43, arg44, (<&>>), (&>), (<&))
+import           Day07 (foo)
+
 
 input :: IO [String]
 input = lines <$> readFile "input/input06.txt"
@@ -49,7 +39,8 @@ relevantWorld :: [Coordinate] -> (Coordinate, Coordinate)
 relevantWorld = ((,) <$> both minimum <*> both maximum) . unzip
 
 -- "simple and easy" way to say: x==x1||x==x2||y==y1||y==y2
-comparators :: (Int, Int) -> (Int, Int) -> Int -> Int -> Bool
+--             (x1 , y1 ) -> (x2 , y2 ) ->  x  ->  y
+comparators :: Coordinate -> Coordinate -> Int -> Int -> Bool
 comparators = anyOf <$$$$>>>> ((==) <$$$$>> arg43 <*< fst ... arg41) -- x == x1
                           <*< ((==) <$$$$>> arg43 <*< fst ... arg42) -- x == x2
                           <*< ((==) <$$$$>> arg44 <*< snd ... arg41) -- y == y1
@@ -58,14 +49,21 @@ comparators = anyOf <$$$$>>>> ((==) <$$$$>> arg43 <*< fst ... arg41) -- x == x1
 allRelevantCoordinates :: Coordinate -> Coordinate -> [(Coordinate, Bool)]
 --allRelevantCoordinates (x1,y1) (x2,y2) = [((x,y),x==x1||x==x2||y==y1||y==y2) | x <- [x1..x2], y <- [y1..y2]]
 -- ugh, too difficult...
-allRelevantCoordinates = liftA2 . ((,) <$$>> (,) <*<) <$$>>> comparators <*< (enumFromTo `on` fst) <*< (enumFromTo `on` snd)
+allRelevantCoordinates = liftA2 . ((,) <$$>> (,) <*<) <$$>>> comparators
+                                                         <*< (enumFromTo `on` fst)
+                                                         <*< (enumFromTo `on` snd)
 
 pairwiseDistancesTo :: [Coordinate] -> [(Coordinate, Bool)] -> [([Int], Bool)]
 --pairwiseDistancesTo cs ccs = fmap (first $ (flip fmap cs) . manhattan) ccs
-pairwiseDistancesTo = fmap . first . (. manhattan) . flip fmap -- aaargh...
+--pairwiseDistancesTo = fmap <&>> (\cs -> first $ (flip fmap cs) . manhattan) <*< id
+--pairwiseDistancesTo = fmap . first . (. manhattan) . flip fmap -- aaargh...
+pairwiseDistancesTo = first . (. manhattan) . flip fmap &> (<$>) <& id
 
 removeElements :: [Int] -> [(Int, Bool)] -> [(Int, Bool)]
-removeElements = filter . (. fst) . flip notElem -- aaargh...
+--removeElements es = filter ((`notElem` es) . fst)
+--removeElements = filter <&>> (. fst) . flip notElem <*< id
+--removeElements = filter . (. fst) . flip notElem -- aaargh...
+removeElements = (. fst) . flip notElem &> filter <& id
 
 havingExactMinimum :: ([Int], Bool) -> Bool
 havingExactMinimum = (== 1) . length . head . group . sort . fst

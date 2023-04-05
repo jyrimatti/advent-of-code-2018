@@ -1,33 +1,20 @@
 module Day22 where
 
-import Algorithm.Search (dijkstra)
-import Control.Applicative (liftA2)
+import           Algorithm.Search (dijkstra)
+import           Control.Applicative (liftA2)
 import           Control.Conditional (if')
-import Data.Bifunctor (first, second)
+import           Data.Bifunctor (first, second)
 import           Data.FoldApp (allOf, listOf)
-import Data.Maybe       (fromJust)
-import Data.Sequence
-    ( Seq, adjust', index, length, replicate, take, update )
-import Data.Tuple.Extra (both)
-import Prelude          hiding (head, length, replicate, take, (!!))
-import Universum.VarArg ((...))
-import Util
-    ( (<$$$>>),
-      (<$$$>>>),
-      (<$$>>),
-      (<$$>>>),
-      (<$$>>>>),
-      (<&>>),
-      (<*<),
-      arg2,
-      arg31,
-      arg32,
-      arg33,
-      compose3,
-      const2,
-      const3,
-      flip2 )
-import Universum (on)
+import           Data.Maybe (fromJust)
+import           Data.Sequence (Seq, adjust', index, length, replicate, take, update)
+import           Data.Tuple.Extra (both)
+import           Prelude hiding (head, length, replicate, take, (!!))
+import           Universum.VarArg ((...))
+import           Util ((<$$$>>), (<$$$>>>), (<$$>>), (<$$>>>), (<$$>>>>), (<&>>)
+                     , (<*<), arg2, arg31, arg32, arg33, compose3, const2
+                     , const3, flip2, (<&), (&>))
+import           Universum (on)
+
 
 depth :: Int
 depth = 6084
@@ -39,7 +26,7 @@ target :: Coordinate
 target = (14,709)
 
 (!!) :: RiskLevels -> Coordinate -> Int
-(!!) = flip $ uncurry $ (.) <&>> flip index <*< flip index
+(!!) = flip . uncurry $ flip index &> (.) <& flip index
 
 geoindex :: RiskLevels -> Coordinate -> Int
 geoindex = if' <$$>>> (== (0,0)) ... arg2
@@ -50,8 +37,8 @@ geoindex = if' <$$>>> (== (0,0)) ... arg2
                   <*< (*16807) . fst ... arg2 $
            if' <$$>>> (== 0) . fst ... arg2
                   <*< (*48271) . snd ... arg2
-                  <*< ( (*) <$$>> ((!!) <&>> id <*< first pred)
-                              <*< ((!!) <&>> id <*< second pred))
+                  <*< ( (*) <$$>> id &> (!!) <& first pred
+                              <*< id &> (!!) <& second pred)
 
 erosion :: RiskLevels -> Coordinate -> Int
 erosion = (`mod` 20183) . (+ depth) ... geoindex
@@ -69,7 +56,9 @@ solve :: RiskLevels
 solve = fmap riskLevel <$> foldl reducer initRiskLevels allCoords
 
 reducer :: RiskLevels -> Coordinate -> RiskLevels
-reducer = adjust' <$$>>> (update <$$>> fst ... arg2 <*< erosion) <*< snd ... arg2 <*< const
+reducer = adjust' <$$>>> (update <$$>> fst ... arg2 <*< erosion)
+                     <*< snd ... arg2
+                     <*< const
 
 solve1 :: Int
 solve1 = sum $ sum . take (fst target + 1) <$> take (snd target + 1) solve
@@ -84,9 +73,9 @@ next = listOf <$> first succ <*> first pred <*> second succ <*> second pred
 
 inside :: RiskLevels -> Coordinate -> Bool
 inside = allOf <$$>>>> (>=0) . snd ... arg2
-                   <*< ((>) <&>> length <*< snd)
+                   <*< length &> (>) <& snd
                    <*< (>=0) . fst ... arg2
-                   <*< ((>) <&>> length . (`index` 0) <*< fst)
+                   <*< length . (`index` 0) &> (>) <& fst
 
 data Equipment = ClimingGear | Torch | Neither
   deriving (Eq,Ord,Show)
@@ -110,7 +99,8 @@ neighbours = compose3 <$> concatMap . (zip <$$>> repeat ... arg2 <*< properGear)
 
 foo :: RiskLevels -> (Coordinate, Equipment) -> (Coordinate, Equipment) -> Bool
 foo = (&&) <$$$>> const ((/=) `on` snd)
-              <*< (elem <$$$>> snd ... arg33 <*< (properGear <$$$>> arg31 <*< fst ... arg32) )
+              <*< (elem <$$$>> snd ... arg33
+                           <*< (properGear <$$$>> arg31 <*< fst ... arg32) )
 
 cost :: RiskLevels -> (Coordinate, Equipment) -> (Coordinate, Equipment) -> Int
 cost = if' <$$$>>> foo

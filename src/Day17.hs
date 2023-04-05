@@ -3,35 +3,23 @@ module Day17 where
 
 import           Control.Applicative (liftA2)
 import           Control.Applicative.Combinators (count, between, sepBy, optional)
-import           Control.Arrow                        ((&&&))
+import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import           Data.Bifunctor                       (first, second, bimap)
-import           Data.Foldable                        (toList)
+import           Data.Bifunctor (first, second, bimap)
+import           Data.Foldable (toList)
 import           Data.FoldApp (allOf, foldOf)
-import           Data.List                            (concatMap, find, nub,
-                                                       sortOn)
-import           Data.Maybe                           (fromJust, isJust,
-                                                       isNothing)
-import qualified Data.Sequence                        as S
-import           Data.Sequence                        (Seq, (<|), (|>))
+import           Data.List (concatMap, find, nub, sortOn)
+import           Data.Maybe (fromJust, isJust, isNothing)
+import qualified Data.Sequence as S
+import           Data.Sequence (Seq, (<|), (|>))
 import           Data.Tuple.Extra (both, fst3, snd3, thd3)
-import           Text.Megaparsec            (Parsec, anySingle, many, optional,
-                                             parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char       (char, letterChar, space, string)
+import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import Util
-    ( (<$$$>>),
-      (<$$>>),
-      (<$$>>>),
-      (<&>>),
-      (<*<),
-      arg2,
-      arg31,
-      arg32,
-      arg33,
-      singleton )
-import Data.Composition ((.*))
+import           Util ((<$$$>>), (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, arg31, arg32, arg33, singleton, (<&), (&>))
+import           Data.Composition ((.*))
+
 
 input :: IO [String]
 input = lines <$> readFile  "input/input17.txt"
@@ -51,11 +39,12 @@ rowP = (liftA2 (Clay,,) <$> head <*> last) . fmap snd . sortOn fst <$> coordOrRa
 
 data Substance = Spring | Empty | Clay | Water | Retained deriving Eq
 instance Show Substance where
-  show Spring   = "+"
-  show Empty    = "."
-  show Clay     = "#"
-  show Water    = "|"
-  show Retained = "~"
+  show = if' <$> (== Spring)   <*> const "+" <*> (
+         if' <$> (== Empty)    <*> const "." <*> (
+         if' <$> (== Clay)     <*> const "#" <*> (
+         if' <$> (== Water)    <*> const "|" <*> (
+         if' <$> (== Retained) <*> const "~" <*>
+                 error "not here"))))
 
 type Coord = (Substance,Int,Int)
 type Map = Seq (Seq Substance)
@@ -94,10 +83,10 @@ height :: Seq a -> Int
 height = length
 
 width :: Map -> Int
-width = S.length . flip S.index 0
+width = S.length . (`S.index` 0)
 
 substance :: (Int, Int) -> Map -> Substance
-substance = uncurry $ (.) <&>> flip S.index <*< flip S.index
+substance = uncurry $ flip S.index &> (.) <& flip S.index
 
 set :: (Int, Int) -> Substance -> Map -> Map
 set = S.adjust' <$$>> S.update . fst
@@ -112,7 +101,7 @@ wetLeft = (||) <$$>> (== Clay) ... substance
 wetRight :: (Int, Int) -> Map -> Bool
 wetRight = (||) <$$>> (== Clay) ... substance
                  <*< (allOf <$$>>> (`elem` [Water,Retained]) ... substance
-                               <*< ((<) <&>> fst <*< pred . width)
+                               <*< fst &> (<) <& pred . width
                                <*< wetRight .right)
 
 retainLeft :: (Int, Int) -> Map -> Map
@@ -126,11 +115,11 @@ retainRight = if' <$$>>> (== Clay) ... substance
                     <*< (retainRight <$$>> right ... const <*< (`set` Retained))
 
 watery :: (Int,Int) -> Map -> Map
-watery = if' <$$>>> ((||) <$$>> (<0) . snd ... const <*< ( (>=) <&>> snd <*< height))
+watery = if' <$$>>> ((||) <$$>> (<0) . snd ... const <*< snd &> (>=) <& height)
                 <*< arg2 $
-         if' <$$>>> ((||) <$$>> (<0) . snd ... const <*< ( (==) <&>> snd <*< pred . height))
+         if' <$$>>> ((||) <$$>> (<0) . snd ... const <*< snd &> (==) <& pred . height)
                 <*< flip set Water $
-         if' <$$>>> ((||) <$$>> (<0) . fst ... const <*< ( (>=) <&>> fst <*< width))
+         if' <$$>>> ((||) <$$>> (<0) . fst ... const <*< fst &> (>=) <& width)
                 <*< arg2 $
          if' <$$>>> (== Spring) ... substance
                 <*< watery . down $
@@ -163,10 +152,10 @@ quux = if' <$$>>> ((&&) <$$>> verticallyInside
               <*< arg2
 
 verticallyInside :: (Int, Int) -> Seq a -> Bool
-verticallyInside = (<=) <&>> snd <*< height
+verticallyInside = snd &> (<=) <& height
 
 stripLeft :: [Coord] -> [Coord]
-stripLeft = fmap . first <$> flip (-) . minimum . fmap snd3 <*> id
+stripLeft = fmap . first <$> subtract . minimum . fmap snd3 <*> id
 
 findSpring :: Map -> (Int, Int)
 findSpring = (,0) . fromJust . S.findIndexL (== Spring) . (`S.index` 0)

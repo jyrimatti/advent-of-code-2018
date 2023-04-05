@@ -2,40 +2,41 @@
 module Day09 where
 
 import           Control.Applicative.Combinators (count)
-import           Control.Arrow                        ((&&&))
+import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import Control.Lens ( over, set, makeLenses )
-import           Data.List                            (iterate')
+import           Control.Lens (over, set, makeLenses)
+import           Data.List (iterate')
 import           Data.Maybe (fromJust)
-import qualified Data.Sequence                        as S
+import qualified Data.Sequence as S
 import           Data.Tuple.Extra (uncurry3)
-import           Prelude                              hiding (round)
-import           Text.Megaparsec            (Parsec, anySingle, many, optional,
-                                             parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char       (char, letterChar, space, string)
+import           Prelude hiding (round)
+import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), arg2 )
+import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, (<$$$>>), (<$$$>>>))
+
 
 input :: IO String
 input = readFile "input/input09.txt"
 
 data Game = Game {
-    _players :: Int,
-    _rounds  :: Int,
-
-    _marbles :: S.Seq Int,
     _round   :: Int,
     _index   :: Int,
     _player  :: Int,
-    _scores  :: S.Seq Int
+    _marbles :: S.Seq Int,
+    
+    _scores  :: S.Seq Int,
+
+    _players :: Int,
+    _rounds  :: Int
 } deriving Show
 
 makeLenses ''Game
 
 gameP :: Parser Game
-gameP = ( ($ 0) . ($ 0) . ($ 0) . ($ S.empty) <$$>> Game <*< flip S.replicate 0 ... const ) <$> (decimal <* string " players; last marble is worth ")
-                                                                                            <*> (decimal <* string " points")
+gameP = (Game 0 0 0 S.empty <$$>>> (`S.replicate` 0) ... const) <*< const <*< arg2 <$> (decimal <* string " players; last marble is worth ")
+                                                                                   <*> (decimal <* string " points")
 
 type Parser = Parsec () String
 
@@ -53,13 +54,13 @@ newIndex (Game _ _ marbles round index _ _) | isSpecial round               = (S
 newIndex (Game _ _ marbles _     index _ _) | index == S.length marbles - 2 = S.length marbles
 newIndex (Game _ _ marbles _     index _ _)                                 = (index + 2) `rem` S.length marbles
 -}
-newIndex = if' <$> (== 0) . S.length . _marbles
+newIndex = if' <$> S.null . _marbles
                <*> const 0 <*> (
            if' <$> (== 1) . S.length . _marbles
                <*> const 1 <*> (
            if' <$> isSpecial . _round
-               <*> (rem <$> ((+) <$> S.length . _marbles <*> flip (-) 7 . _index) <*> S.length . _marbles) <*> (
-           if' <$> ( (==) <$> _index <*> flip (-) 2 . S.length . _marbles)
+               <*> (rem <$> ((+) <$> S.length . _marbles <*> subtract 7 . _index) <*> S.length . _marbles) <*> (
+           if' <$> ( (==) <$> _index <*> subtract 2 . S.length . _marbles)
                <*> S.length . _marbles
                <*> (rem <$> (+2) . _index <*> S.length . _marbles))))
 
@@ -72,8 +73,11 @@ nextPlayer = rem <$> (+1) . _player <*> _players
 updateCurrentPlayerScore :: Game -> S.Seq Int
 updateCurrentPlayerScore = S.adjust' <$> (+) . getScore <*> _player <*> _scores
 
-updateMarbles :: Int {-newIndex-} -> Game -> S.Seq Int
-updateMarbles = uncurry <&>> S.insertAt <*< (_round &&& _marbles)
+updateMarbles :: Int -> Game -> S.Seq Int
+--updateMarbles newIndex game = S.insertAt newIndex (_round game) (_marbles game)
+--updateMarbles = uncurry <&>> S.insertAt <*< (_round &&& _marbles)
+updateMarbles = S.insertAt <$$>>> const <*< _round ... arg2 
+                                        <*< _marbles ... arg2
 
 step :: Game -> Game
 {-step g | isSpecial (round g) = g {
@@ -89,6 +93,7 @@ step g = g {
   index   = newIndex g,
   player  = nextPlayer g
 }-}
+-- uuh...
 step = over round succ .
        (set player <$> nextPlayer <*> id) .
        (((.) <$> set index

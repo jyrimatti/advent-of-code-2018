@@ -43,9 +43,21 @@ uncurry4 f (w, x, y, z) = f w x y z
 both3 :: (t -> c) -> (t, t, t) -> (c, c, c)
 both3 f (a,b,c) = (f a, f b, f c)
 
-argDrop :: a -> b -> a
-argDrop = const
+-- | Keeps first arg, drops the next. == const
+argDrop1 :: a -> b -> a
+argDrop1 = const
 
+-- | Applies first arg to a function, and drops the next
+argDrop2 :: (a -> b) -> a -> toDrop -> b
+--argDrop2 f a _ = f a
+argDrop2 = const ... ($)
+
+-- | Applies two first args to a function, and drops the next
+argDrop3 :: (a -> b -> c) -> a -> b -> toDrop -> c
+--argDrop3 f a b _ = f a b
+argDrop3 = const ... ($)
+
+arg1 a b = a
 arg2 a b = b
 arg3 a b c = c
 arg31 a b c = a
@@ -98,7 +110,7 @@ anyOf :: FoldrApp Bool Bool f => f
 anyOf = foldrApp (||) False
 
 
--- variation of ($) with the same fixity as the following operators
+-- | variation of ($) with the same fixity as the following operators
 (<*<) :: (a -> b) -> a -> b
 (<*<) = ($)
 infixl 4 <*<
@@ -144,6 +156,23 @@ infixl 4 <&>>>>
 (<&>>>>>) :: (s -> t -> u -> v -> w -> z) -> (a -> s) -> (b -> t) -> (c -> u) -> (d -> v) -> (e -> w) -> a -> b -> c -> d -> e -> z
 (<&>>>>>) f f1 f2 f3 f4 f5 a b c d e = f (f1 a) (f2 b) (f3 c) (f4 d) (f5 e)
 infixl 4 <&>>>>>
+
+
+
+
+-- "Lifted operator"
+--   \a b -> (succ a) - (pred b)
+-- can be written as:
+--   succ &> (-) <& pred
+
+(&>) :: (a -> s) -> (s -> t -> z) -> (b -> t) -> a -> b -> z
+a &> f = (f <&>> a <*<)
+infixl 5 &>
+
+(<&) :: ((b -> t) -> a -> b -> z) -> (b -> t) -> a -> b -> z
+f <& b = f b
+infixl 5 <&
+
 
 
 

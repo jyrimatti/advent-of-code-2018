@@ -3,54 +3,28 @@
 {-# LANGUAGE TupleSections   #-}
 module Day13 where
 
-import           Control.Arrow                        ((&&&))
+import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import Control.Lens ( over, set, makeLenses )
-import           Data.Bifunctor                       (second)
+import           Control.Lens (over, set, makeLenses)
+import           Data.Bifunctor (second)
 import           Data.FoldApp (allOf)
-import           Data.Function                        (on)
-import           Data.List                            (cycle, groupBy, iterate',
-                                                       nub, nubBy, sort, sortBy,
-                                                       (\\), sortOn)
+import           Data.Function (on)
+import           Data.List (cycle, groupBy, iterate', nub, nubBy, sort, sortBy, (\\), sortOn)
 import           Data.List.Extra (groupOn)
-import qualified Data.Matrix                          as M
-import           Data.Matrix                          (Matrix, (!))
-import           Data.Maybe                           (catMaybes, fromJust, isJust,
-                                                       isNothing, listToMaybe)
-import           Data.Tuple                           (swap)
-import qualified Data.Vector                          as V
-import           Data.Vector                          (Vector)
-import           Prelude                              hiding (Either (Left, Right))
+import qualified Data.Matrix as M
+import           Data.Matrix (Matrix, (!))
+import           Data.Maybe (catMaybes, fromJust, isJust, isNothing, listToMaybe)
+import           Data.Tuple (swap)
+import qualified Data.Vector as V
+import           Data.Vector (Vector)
+import           Prelude hiding (Either(Left, Right))
 import           Universum.VarArg ((...))
-import Util
-    ( (<$$$$$>>),
-      (<$$$$$>>>),
-      (<$$$$>>),
-      (<$$$>>),
-      (<$$$>>>),
-      (<$$>>),
-      (<$$>>>),
-      (<&>>),
-      (<&>>>),
-      (<&>>>>),
-      (<*<),
-      anyOf,
-      arg2,
-      arg31,
-      arg32,
-      arg33,
-      arg41,
-      arg42,
-      arg43,
-      arg44,
-      arg51,
-      arg52,
-      arg53,
-      arg54,
-      arg55,
-      compose3,
-      const2,
-      singleton )
+import           Util ((<$$$$$>>), (<$$$$$>>>), (<$$$$>>), (<$$$>>), (<$$$>>>)
+                     , (<$$>>), (<$$>>>), (<&>>), (<&>>>), (<&>>>>), (<*<)
+                     , anyOf, arg2, arg31, arg32, arg33, arg41, arg42, arg43
+                     , arg44, arg51, arg52, arg53, arg54, arg55, compose3
+                     , const2, singleton, (<&), (&>))
+
 
 input :: IO [String]
 input = lines <$> readFile "input/input13.txt"
@@ -167,7 +141,7 @@ match2 = allOf <$$$$$>>> ((==) <$$$$$>> arg52 <*< _direction ... arg54)
                      <*< ((==) <$$$$$>> arg51 <*< _prevTurn ... arg54)
 
 justMove :: Coordinate -> Cart -> ignore -> Cart
-justMove = const ... ($) <&>> over loc . move <*< id
+justMove = over loc . move &> const ... ($) <& id
 
 moveTurn :: Coordinate -> Char -> Cart -> ignore -> Cart
 moveTurn = const ... ($) . (.) <&>>> over loc . move
@@ -181,7 +155,8 @@ moveTurnStep = const ... compose3 <&>>>> over loc . move
                                      <*< id
 
 act :: Map -> Cart -> Cart
-act = action <$$>> arg2 <*< ((!) <&>> id <*< _loc)
+-- act map = action <$> id <*> ((map !) . loc)
+act = action <$$>> arg2 <*< (id &> (!) <& _loc)
 
 collided :: Cart -> Bool
 collided = (== 'x') . _direction
@@ -197,14 +172,14 @@ markColliding = (V.//) <$> id <*> collidingWithIndex
 
 step :: (Cart -> Cart) -> Carts -> Int -> Carts
 --step act carts cartIndex = markColliding $ carts V.// [(cartIndex, act (carts V.! cartIndex))]
-step = markColliding ... flip (V.//) . singleton ... (,) <$$$>>> arg33 <*< (. (V.!)) . (.) <*< arg32 -- uugh...
+--step = markColliding ... flip (V.//) . singleton ... (,) <$$$>>> arg33 <*< (. (V.!)) . (.) <*< arg32 -- uugh...
+step = markColliding ... (V.//) <$$$>> arg32 <*< ( singleton ... (,) <$$$>> arg33 <*< (... (V.!)) )
 
 tick :: Map -> Carts -> [Carts]
 --tick = take <$$>> length ... arg2
 --              <*< (\map -> tail . fmap fst . iterate' (uncurry (step $ act map) &&& succ . snd) . (,0))
 tick = take <$$>> length ... arg2
-              <*< (tail . fmap fst ... iterate' <&>> ((,) <$$>> uncurry . step . act <*< succ . snd ... arg2)
-                                                 <*< (,0))
+              <*< ((,) <$$>> uncurry . step . act <*< succ . snd ... arg2) &> tail . fmap fst ... iterate' <& (,0)
 
 sortByLocation :: Carts -> Carts
 sortByLocation = V.fromList . sortOn _loc . V.toList
@@ -212,7 +187,8 @@ sortByLocation = V.fromList . sortOn _loc . V.toList
 ticks :: Map -> Carts -> [[Carts]]
 --ticks map = iterate' (tick map . sortByLocation . last) . singleton
 --ticks = (. singleton) . iterate' . (. sortByLocation . last) . tick
-ticks = iterate' <&>> (. sortByLocation . last) . tick <*< singleton
+--ticks = iterate' <&>> (. sortByLocation . last) . tick <*< singleton
+ticks = (. sortByLocation . last) . tick &> iterate' <& singleton
 
 withCarts :: Carts -> Map -> Map
 --withCarts carts = M.imap $ \i c -> case V.find ((== i) . _loc) carts of

@@ -4,57 +4,33 @@
 {-# LANGUAGE TypeApplications #-}
 module Day15 where
 
-import           Algorithm.Search                     (bfs)
-import           Control.Arrow                        ((&&&))
+import           Algorithm.Search (bfs)
+import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import Control.Lens
-    ( Traversable(traverse), over, set, makeLenses )
-import           Data.Bifunctor                       (bimap, first, second)
-import           Data.Foldable                        (toList)
+import           Control.Lens (Traversable(traverse), over, set, makeLenses)
+import           Data.Bifunctor (bimap, first, second)
+import           Data.Foldable (toList)
 import           Data.FoldApp (listOf)
-import           Data.Function                        (on)
-import           Data.List                            (cycle, groupBy, iterate',
-                                                       nub, nubBy, sort, sortBy,
-                                                       sortOn, zip, (\\))
-import           Data.List.Extra                      (groupSortBy)
-import qualified Data.Matrix                          as M
-import           Data.Matrix                          (Matrix, (!))
-import           Data.Maybe                           (catMaybes, fromJust,
-                                                       fromMaybe, isJust,
-                                                       isNothing, listToMaybe,
-                                                       mapMaybe, maybeToList)
-import           Data.Ord                             (comparing)
-import qualified Data.Sequence                        as S
-import           Data.Sequence                        (Seq)
-import           Data.Tuple                           (swap)
-import qualified Data.Vector                          as V
-import           Data.Vector                          (Vector)
-import           Prelude                              hiding (Either (Left, Right), round)
+import           Data.Function (on)
+import           Data.List (cycle, groupBy, iterate', nub, nubBy, sort, sortBy, sortOn, zip, (\\))
+import           Data.List.Extra (groupSortBy)
+import qualified Data.Matrix as M
+import           Data.Matrix (Matrix, (!))
+import           Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import           Data.Ord (comparing)
+import qualified Data.Sequence as S
+import           Data.Sequence (Seq)
+import           Data.Tuple (swap)
+import qualified Data.Vector as V
+import           Data.Vector (Vector)
+import           Prelude hiding (Either(Left, Right), round)
 import           Universum.VarArg ((...))
-import Util
-    ( (<$$$$>>),
-      (<$$$$>>>),
-      (<$$$>>),
-      (<$$$>>>),
-      (<$$$>>>>),
-      (<$$>>),
-      (<$$>>>),
-      (<$$>>>>),
-      (<&>>),
-      (<*<),
-      anyOf,
-      arg2,
-      arg31,
-      arg32,
-      arg33,
-      arg41,
-      arg42,
-      arg43,
-      arg44,
-      const2,
-      const3,
-      singleton )
-import Data.Composition ((.**), (.*))
+import           Util ((<$$$$>>), (<$$$$>>>), (<$$$>>), (<$$$>>>), (<$$$>>>>)
+                     , (<$$>>), (<$$>>>), (<$$>>>>), (<&>>), (<*<), anyOf, arg2
+                     , arg31, arg32, arg33, arg41, arg42, arg43, arg44, const2
+                     , const3, singleton, (<&), (&>))
+import           Data.Composition ((.**), (.*))
+
 
 inputLines :: FilePath -> IO [String]
 inputLines = fmap lines . readFile
@@ -109,8 +85,7 @@ find :: (Unit -> Bool) -> Units -> Maybe Unit
 find = fmap . S.index <$$>> arg2 <*< S.findIndexL
 
 findUnitWithCoords :: Units -> (Int, Int) -> Maybe Unit
-findUnitWithCoords = flip find <&>> id
-                                <*< (. _location) . (==)
+findUnitWithCoords = id &> flip find <& (. _location) . (==)
 
 withUnits :: Units -> Map -> Map
 withUnits = M.imap . (maybe <$$$>>> arg33
@@ -118,16 +93,17 @@ withUnits = M.imap . (maybe <$$$>>> arg33
                                 <*< const ... findUnitWithCoords)
 
 withoutUnits :: Map -> Map
-withoutUnits = M.map $ if' <$> (== 'G') <*> const '.' <*> (
-                       if' <$> (== 'E') <*> const '.' <*>
-                       id)
+withoutUnits = M.map $ if' <$> (== 'G')
+                           <*> const '.' <*> (
+                       if' <$> (== 'E')
+                           <*> const '.' <*>
+                               id)
 
 unitTypeDiffersFrom :: Unit -> Unit -> Bool
 unitTypeDiffersFrom = (/=) `on` _unitType
 
 targetsFor :: Units -> Unit -> [Unit]
-targetsFor = toList ... flip S.filter <&>> id
-                                       <*< ((&&) <$> isAlive <*> ) . unitTypeDiffersFrom
+targetsFor = id &> toList ... flip S.filter <& ((&&) <$> isAlive <*> ) . unitTypeDiffersFrom
 
 nextLocs :: (Int, Int) -> [(Int, Int)]
 nextLocs = uncurry $ listOf <$$>>>> first  pred ... (,)
@@ -160,12 +136,16 @@ pathToTarget = bfs <$$$$>>> (nextStates <$$$$>>> arg41 <*< arg42 <*< arg44)
 
 pathToNearest :: Map -> Units -> Unit -> [Unit] -> Maybe [(Int,Int)]
 pathToNearest = listToMaybe . sortOn (length &&& head) ... (mapMaybe .** pathToTarget)
+-- sortOn (firstByThis &&& andThenByThis) xs
+
+adjustElem :: (Unit -> Unit) -> Unit -> Units -> Units
+adjustElem = (S.adjust' <$$$>>> arg31
+                            <*< fromJust ... const S.elemIndexL
+                            <*< arg33)
 
 update :: (Unit -> Unit) -> Unit -> Units -> (Units,Unit)
-update = (.) <$$>> flip (,) ... ($)
-               <*< (S.adjust' <$$$>>> arg31
-                                  <*< fromJust ... const S.elemIndexL
-                                  <*< arg33)
+update = (.) <$$>> flip (,) ... ($) -- return with adjusted element (after adjusting)
+               <*< adjustElem
 
 newLocation :: Map -> Units -> Unit -> (Int, Int)
 newLocation = maybe <$$$>>> _location ... arg33
@@ -173,20 +153,20 @@ newLocation = maybe <$$$>>> _location ... arg33
                         <*< (($) <$$$>> pathToNearest <*< const targetsFor)
 
 move :: Map -> Units -> Unit -> (Units,Unit)
-move = update <$$$>>> ((($) <$$$>>> arg31 <*< arg33 <*< arg33) .* (set location ... newLocation))
+move = update <$$$>>> (($) <$$$>>> arg31 <*< arg33 <*< arg33) .* (set location ... newLocation)
                   <*< arg33
                   <*< arg32
 
 inRange :: Unit -> Unit -> Bool
-inRange = flip elem <&>> nextLocs . _location <*< _location
+inRange = _location &> elem <& nextLocs . _location
 
 findTarget :: Units -> Unit -> Unit
 findTarget = head . sortOn (_hp &&& _location) ... (filter <$$>> inRange ... arg2 <*< targetsFor)
 
 attack :: Units -> Unit -> Units
-attack = fst ... update <$$>>> over hp . (flip (-) <&>> _power <*< id) ... arg2
-                           <*< findTarget
-                           <*< const
+attack = adjustElem <$$>>> over hp . subtract . _power ... arg2
+                       <*< findTarget
+                       <*< const
 
 isAdjacentToTarget :: Units -> Unit -> Bool
 isAdjacentToTarget = ($) <$$>> (elem . _location ... arg2)
@@ -205,15 +185,19 @@ afterMove = if' <$$>>> isAdjacentToTarget
                    <*< const
 
 actUnit :: Map -> Units -> Int -> Units
-actUnit = act <$$$>>> arg31 <*< arg32 <*< const S.index
+actUnit = act <$$$>>> arg31
+                  <*< arg32
+                  <*< const S.index
+
+doIterate :: Map -> Units -> [(Units, Int)]
+doIterate = ((,) <$$>> uncurry . actUnit <*< const (succ . snd)) &> iterate' <& (,0)
 
 round :: Map -> Units -> [Units]
 round = fmap (S.filter isAlive) ... take <$$>> length ... arg2
-                                           <*< tail . fmap fst ... (iterate' <&>> ((,) <$$>> uncurry . actUnit <*< const (succ . snd))
-                                                                              <*< (,0))
+                                           <*< tail . fmap fst ... doIterate
 
 allRounds :: Map -> Units -> [[Units]]
-allRounds = iterate' <&>> (. S.sortOn _location . last) . round <*< singleton
+allRounds = (. S.sortOn _location . last) . round &> iterate' <& singleton
 
 mapAndUnits :: Int -> [String] -> (Map, Units)
 mapAndUnits = (. M.fromLists) . ((,) <$$>> const withoutUnits <*< (. findUnits) . fmap . withElfPower)
@@ -225,7 +209,7 @@ notCompleted :: (a, [Units]) -> Bool
 notCompleted = (>1) . unitTypesAtEndOfRound . snd
 
 solve :: Int -> [String] -> (Map,(Int,[Units]))
-solve = ((,) <$> fst <*> head . dropWhile notCompleted . zip [0..] . uncurry allRounds) ... mapAndUnits
+solve = (fst &&& head . dropWhile notCompleted . zip [0..] . uncurry allRounds) ... mapAndUnits
 
 outcome :: (Int, [Seq Unit]) -> Int
 outcome = (*) <$> sum . fmap _hp . last . snd
@@ -246,8 +230,7 @@ onlyElvesRemain :: (a, [Units]) -> Bool
 onlyElvesRemain = all isElf . last . snd
 
 noElvesLost :: Int -> (a, [Units]) -> Bool
-noElvesLost = (==) <&>> id
-                    <*< length . S.filter isElf . last . snd
+noElvesLost = id &> (==) <& length . S.filter isElf . last . snd
 
 elfsWinWithoutLosses :: Int -> (Int,[Units]) -> Bool
 elfsWinWithoutLosses = (&&) <$$>> const onlyElvesRemain <*< noElvesLost

@@ -1,19 +1,19 @@
 module Day03 where
 
-import Control.Applicative        (liftA2)
-import Control.Arrow              ((&&&))
-import Data.List                  (find, group, groupBy, sort, sortBy)
-import Data.List.Extra            (groupSortOn)
-import Data.Maybe                 (fromJust)
-import Data.Profunctor ()
-import Data.Set                   as Set (fromList, notMember)
-import Data.Tuple.Extra           (snd3, thd3)
-import Text.Megaparsec            (Parsec, many, optional, parseMaybe, try,
-                                             (<|>))
-import Text.Megaparsec.Char       (char, letterChar, space, string)
-import Text.Megaparsec.Char.Lexer (decimal, signed)
-import Universum ((...))
-import Util ( (<&>>), (<*<) )
+import           Control.Applicative (liftA2)
+import           Control.Arrow ((&&&))
+import           Data.List (find, group, groupBy, sort, sortBy)
+import           Data.List.Extra (groupSortOn)
+import           Data.Maybe (fromJust)
+import           Data.Profunctor (Profunctor(lmap))
+import           Data.Set as Set (fromList, notMember)
+import           Data.Tuple.Extra (snd3, thd3)
+import           Text.Megaparsec (Parsec, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum ((...))
+import           Util ((&>), (<&), (<&>>), (<*<))
+
 
 
 input :: IO [Claim]
@@ -43,13 +43,14 @@ range :: Int -- amount
       -> Int -- start
       -> [Int]
 -- range = flip (dove take) enumFrom
-range = take <&>> id <*< enumFrom
+--range = take <&>> id <*< enumFrom
+range = id &> take <& enumFrom
 
 allPairs :: [Int] -> [Int] -> [(Int, Int)]
-allPairs = liftA2 (,) -- Like: lift the tuple constructor to work with lists, using the applicative effect (which happens to be cartesian product)
---allPairs = (<*>) . ((,) <$>)
 -- allPairs xs ys = (,) <$> xs <*> ys          -- readable version, but pointful :(
 -- allPairs xs ys = [(x,y) | x <- xs, y <- ys] -- readable version, but pointful :(
+-- allPairs = (<*>) . ((,) <$>)
+allPairs = liftA2 (,) -- Like: lift the tuple constructor to work with lists, using the applicative effect (which happens to be cartesian product)
 
 claimInches :: Claim -> [(Int, Int)]
 claimInches = allPairs <$> (range <$> width <*> x)
@@ -78,12 +79,10 @@ claimIds = concatMap (fmap fst)
 claimIdsOfInchesWithClaims :: (Int -> Bool) -> [IdsAndInches] -> [Int]
 --claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length)   -- readable, but not point-free
 --claimIdsOfInchesWithClaims = (claimIds .) . filter . (. length)                 -- kind of elegant, but difficult to comprehend
---claimIdsOfInchesWithClaims = dimap (. length) (claimIds .) filter               -- profunctor makes this kind of understandable
 --claimIdsOfInchesWithClaims =  claimIds ... filter . (. length)                  -- "just transform the 1. arg to filter" but a bit difficult to graps how the data flows
-claimIdsOfInchesWithClaims = claimIds ... filter <&>> (. length) <*< id           -- "first arg (predicate) prefixed by length, second passed as-is"
--- Think about the profunctor form like this: We modify the filter function so, that
--- 1) we transform its input (the predicate) with length
--- 2) we transform its output (function from list to list) with claimIds
+--claimIdsOfInchesWithClaims = dimap (. length) (claimIds .) filter               -- profunctor makes this kind of thing...
+--claimIdsOfInchesWithClaims = claimIds ... lmap (. length) filter                -- ...understandable!
+claimIdsOfInchesWithClaims = (. length) &> claimIds ... filter <& id              -- "first arg (predicate) prefixed by length, second passed as-is"
 
 findNonOverlapping :: [IdsAndInches] -> Maybe Int
 findNonOverlapping = find <$> flip notMember . Set.fromList . claimIdsOfInchesWithClaims (> 1)

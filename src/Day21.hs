@@ -4,44 +4,28 @@
 {-# LANGUAGE TupleSections         #-}
 module Day21 where
 
-import           Control.Applicative.Combinators (between, count, optional,
-                                                  sepBy)
-import           Control.Conditional (if')
-import           Control.Arrow                   (second, (&&&))
-import           Data.Bifunctor                  (bimap)
-import           Data.Bits                       ((.&.), (.|.))
-import           Data.Either                     (fromLeft, isLeft, isRight)
-import           Data.Function                   (on)
-import           Data.List                       (iterate')
-import           Data.List.Split                 (chunksOf)
-import           Data.Maybe                      (catMaybes, fromJust,
-                                                  fromMaybe, isJust, isNothing,
-                                                  listToMaybe, mapMaybe,
-                                                  maybeToList)
-import           Data.Ord                        (comparing)
-import           Data.Set                        (Set, empty, insert, member)
-import qualified Data.Vector                     as VB
-import qualified Data.Vector                     as V
-import           Data.Vector                     (Vector)
-import           Prelude                         hiding ((!!))
-import           Text.Megaparsec                 (Parsec, anySingle, many,
-                                                  optional, parseMaybe, try,
-                                                  (<|>))
-import           Text.Megaparsec.Char            (char, letterChar, space,
-                                                  string)
-import           Text.Megaparsec.Char.Lexer      (decimal, signed)
+import           Control.Applicative.Combinators (between, count, optional, sepBy)
+import           Control.Conditional (if', bool)
+import           Control.Arrow (second, (&&&))
+import           Data.Bifunctor (bimap)
+import           Data.Bits ((.&.), (.|.))
+import           Data.Either (fromLeft, isLeft, isRight)
+import           Data.Function (on)
+import           Data.List (iterate')
+import           Data.List.Split (chunksOf)
+import           Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import           Data.Ord (comparing)
+import           Data.Set (Set, empty, insert, member)
+import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector as VB
+import           Prelude hiding ((!!))
+import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import Util
-    ( (<$$$>>),
-      (<$$>>),
-      (<$$>>>),
-      (<&>>),
-      (<*<),
-      arg2,
-      arg31,
-      singleton,
-      uncurry4 )
-
+import           Util ((<$$$>>), (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, arg31
+                     , singleton, uncurry4, (<&), (&>), (<$$$$$>>>), (<$$$$$>>)
+                     , arg51, arg52, arg53, arg54, arg55, arg1, (<$$>>>>>))
 
 
 input :: IO [String]
@@ -49,45 +33,46 @@ input = lines <$> readFile  "input/input21.txt"
 
 type Parser = Parsec () String
 
-ipP :: Parser Integer
+ipP :: Parser Int
 ipP = string "#ip " *> decimal
 
-instrP :: Parser (Opcode,Integer,Integer,Integer)
+instrP :: Parser (Opcode,Int,Int,Int)
 instrP = (,,,) <$> (toOpcode <$> many letterChar) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal)
 
 toOpcode :: String -> Opcode
-toOpcode "addr" = AddR
-toOpcode "addi" = AddI
-toOpcode "mulr" = MulR
-toOpcode "muli" = MulI
-toOpcode "banr" = BanR
-toOpcode "bani" = BanI
-toOpcode "borr" = BorR
-toOpcode "bori" = BorI
-toOpcode "setr" = SetR
-toOpcode "seti" = SetI
-toOpcode "gtir" = GtIR
-toOpcode "gtri" = GtRI
-toOpcode "gtrr" = GtRR
-toOpcode "eqir" = EqIR
-toOpcode "eqri" = EqRI
-toOpcode "eqrr" = EqRR
+toOpcode = 
+    if' <$> (== "addr") <*> const AddR <*> (
+    if' <$> (== "addi") <*> const AddI <*> (
+    if' <$> (== "mulr") <*> const MulR <*> (
+    if' <$> (== "muli") <*> const MulI <*> (
+    if' <$> (== "banr") <*> const BanR <*> (
+    if' <$> (== "bani") <*> const BanI <*> (
+    if' <$> (== "borr") <*> const BorR <*> (
+    if' <$> (== "bori") <*> const BorI <*> (
+    if' <$> (== "setr") <*> const SetR <*> (
+    if' <$> (== "seti") <*> const SetI <*> (
+    if' <$> (== "gtir") <*> const GtIR <*> (
+    if' <$> (== "gtri") <*> const GtRI <*> (
+    if' <$> (== "gtrr") <*> const GtRR <*> (
+    if' <$> (== "eqir") <*> const EqIR <*> (
+    if' <$> (== "eqri") <*> const EqRI <*> (
+    if' <$> (== "eqrr") <*> const EqRR <*> undefined)))))))))))))))
 
 ps :: Parser c -> String -> c
 ps = fromJust ... parseMaybe
 
-ip :: String -> Integer
+ip :: String -> Int
 ip = ps ipP
 
-instr :: String -> (Opcode,Integer,Integer,Integer)
+instr :: String -> (Opcode,Int,Int,Int)
 instr = ps instrP
 
-parseData :: [String] -> (Integer, [(Opcode, Integer, Integer, Integer)])
+parseData :: [String] -> (Int, [(Opcode, Int, Int, Int)])
 parseData = bimap ip (fmap instr) . (head &&& tail)
 
-type Register = Integer
+type Register = Int
 
-type Input = Integer
+type Input = Int
 
 data Opcode = AddR | AddI |
               MulR | MulI | 
@@ -105,44 +90,95 @@ data Instruction = Instruction {
     c :: Input
 }
 
-type Registers = Vector Register
+type Registers = V.Vector Register
 type Instructions = VB.Vector Instruction
 
-mkInstructions :: [(Opcode, Input, Input, Input)] -> Vector Instruction
+mkInstructions :: [(Opcode, Input, Input, Input)] -> VB.Vector Instruction
 mkInstructions = VB.fromList . fmap (uncurry4 Instruction)
 
 
 -- Process
 
-update' :: Input -> Integer -> Registers -> Registers
+update' :: Input -> Int -> Registers -> Registers
 update' = flip V.unsafeUpd . singleton ... (,) . fromIntegral
 
-behave :: Instruction -> Registers -> Integer
-behave (Instruction AddR a b c) regs =    regs `V.unsafeIndex` fromIntegral a  +  regs `V.unsafeIndex` fromIntegral b
-behave (Instruction AddI a b c) regs =    regs `V.unsafeIndex` fromIntegral a  +                                    b
-behave (Instruction MulR a b c) regs =    regs `V.unsafeIndex` fromIntegral a  *  regs `V.unsafeIndex` fromIntegral b
-behave (Instruction MulI a b c) regs =    regs `V.unsafeIndex` fromIntegral a  *                                    b
-behave (Instruction BanR a b c) regs =    regs `V.unsafeIndex` fromIntegral a .&. regs `V.unsafeIndex` fromIntegral b
-behave (Instruction BanI a b c) regs =    regs `V.unsafeIndex` fromIntegral a .&.                                   b
-behave (Instruction BorR a b c) regs =    regs `V.unsafeIndex` fromIntegral a .|. regs `V.unsafeIndex` fromIntegral b
-behave (Instruction BorI a b c) regs =    regs `V.unsafeIndex` fromIntegral a .|.                                   b
-behave (Instruction SetR a _ c) regs =    regs `V.unsafeIndex` fromIntegral a
-behave (Instruction SetI a _ c) regs =                                      a
-behave (Instruction GtIR a b c) regs = if                                   a  >  regs `V.unsafeIndex` fromIntegral b then 1 else 0
-behave (Instruction GtRI a b c) regs = if regs `V.unsafeIndex` fromIntegral a  >                                    b then 1 else 0
-behave (Instruction GtRR a b c) regs = if regs `V.unsafeIndex` fromIntegral a  >  regs `V.unsafeIndex` fromIntegral b then 1 else 0
-behave (Instruction EqIR a b c) regs = if                                   a ==  regs `V.unsafeIndex` fromIntegral b then 1 else 0
-behave (Instruction EqRI a b c) regs = if regs `V.unsafeIndex` fromIntegral a ==                                    b then 1 else 0
-behave (Instruction EqRR a b c) regs = if regs `V.unsafeIndex` fromIntegral a ==  regs `V.unsafeIndex` fromIntegral b then 1 else 0
+-- some renaming for 'behave'
+_opcode :: p1 -> p2 -> p3 -> p4 -> p5 -> p1
+_opcode = arg51
+_a :: p1 -> p2 -> p3 -> p4 -> p5 -> p2
+_a = arg52
+_b :: p1 -> p2 -> p3 -> p4 -> p5 -> p3
+_b = arg53
+_c :: p1 -> p2 -> p3 -> p4 -> p5 -> p4
+_c = arg54
+_regs :: p1 -> p2 -> p3 -> p4 -> p5 -> p5
+_regs = arg55
 
-behave2 :: Instruction -> Registers -> Registers
-behave2 = update' <$$>>> c ... const <*< behave <*< arg2
+getVal :: a -> a
+getVal = id
 
-type IP = Integer
+_getReg :: (Opcode -> Input -> Input -> Input -> Registers -> Input) -> (Opcode -> Input -> Input -> Input -> Registers -> Int)
+_getReg = ((V.!) <$$$$$>> _regs <*<)
+
+behave :: Instruction -> Registers -> Registers
+behave = behav_ <$$>>>>> opcode ... arg1 <*< a ... arg1 <*< b ... arg1 <*< c ... arg1 <*< arg2
+--behave (Instruction AddR (Reg a) (Reg b) c) regs = update' c (regs ! a + regs !   b) regs
+--behave (Instruction AddI (Reg a) (Val b) c) regs = update' c (regs ! a +          b) regs
+--behave (Instruction MulR (Reg a) (Reg b) c) regs = update' c (regs ! a * regs !   b) regs
+--behave (Instruction MulI (Reg a) (Val b) c) regs = update' c (regs ! a *          b) regs
+--behave (Instruction BanR (Reg a) (Reg b) c) regs = update' c (regs ! a .&. regs ! b) regs
+--behave (Instruction BanI (Reg a) (Val b) c) regs = update' c (regs ! a .&.        b) regs
+--behave (Instruction BorR (Reg a) (Reg b) c) regs = update' c (regs ! a .|. regs ! b) regs
+--behave (Instruction BorI (Reg a) (Val b) c) regs = update' c (regs ! a .|.        b) regs
+--behave (Instruction SetR (Reg a) _       c) regs = update' c (regs ! a             ) regs
+--behave (Instruction SetI (Val a) _       c) regs = update' c         a               regs
+--behave (Instruction GtIR (Val a) (Reg b) c) regs = update' c (if a        >  regs ! b then 1 else 0) regs
+--behave (Instruction GtRI (Reg a) (Val b) c) regs = update' c (if regs ! a >  b        then 1 else 0) regs
+--behave (Instruction GtRR (Reg a) (Reg b) c) regs = update' c (if regs ! a >  regs ! b then 1 else 0) regs
+--behave (Instruction EqIR (Val a) (Reg b) c) regs = update' c (if a        == regs ! b then 1 else 0) regs
+--behave (Instruction EqRI (Reg a) (Val b) c) regs = update' c (if regs ! a == b        then 1 else 0) regs
+--behave (Instruction EqRR (Reg a) (Reg b) c) regs = update' c (if regs ! a == regs ! b then 1 else 0) regs
+
+behav_ :: Opcode -> Input -> Input -> Input -> Registers -> Registers
+behav_ = if' <$$$$$>>> (== AddR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ( (+)  <$$$$$>> _getReg    _a <*< _getReg    _b) <*< _regs) $
+         if' <$$$$$>>> (== AddI) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ( (+)  <$$$$$>> _getReg    _a <*< getVal ... _b) <*< _regs) $
+         if' <$$$$$>>> (== MulR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ( (*)  <$$$$$>> _getReg    _a <*< _getReg    _b) <*< _regs) $
+         if' <$$$$$>>> (== MulI) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ( (*)  <$$$$$>> _getReg    _a <*< getVal ... _b) <*< _regs) $
+         if' <$$$$$>>> (== BanR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ((.&.) <$$$$$>> _getReg    _a <*< _getReg    _b) <*< _regs) $
+         if' <$$$$$>>> (== BanI) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ((.&.) <$$$$$>> _getReg    _a <*< getVal ... _b) <*< _regs) $
+         if' <$$$$$>>> (== BorR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ((.|.) <$$$$$>> _getReg    _a <*< _getReg    _b) <*< _regs) $
+         if' <$$$$$>>> (== BorI) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<             ((.|.) <$$$$$>> _getReg    _a <*< getVal ... _b) <*< _regs) $
+         if' <$$$$$>>> (== SetR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<                             _getReg    _a                    <*< _regs) $
+         if' <$$$$$>>> (== SetI) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*<                             getVal ... _a                    <*< _regs) $
+         if' <$$$$$>>> (== GtIR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*< (bool 0 1 ... (>)  <$$$$$>> getVal ... _a <*< _getReg    _b) <*< _regs) $
+         if' <$$$$$>>> (== GtRI) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*< (bool 0 1 ... (>)  <$$$$$>> _getReg    _a <*< getVal ... _b) <*< _regs) $
+         if' <$$$$$>>> (== GtRR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*< (bool 0 1 ... (>)  <$$$$$>> _getReg    _a <*< _getReg    _b) <*< _regs) $
+         if' <$$$$$>>> (== EqIR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*< (bool 0 1 ... (==) <$$$$$>> getVal ... _a <*< _getReg    _b) <*< _regs) $
+         if' <$$$$$>>> (== EqRI) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*< (bool 0 1 ... (==) <$$$$$>> _getReg    _a <*< getVal ... _b) <*< _regs) $
+         if' <$$$$$>>> (== EqRR) ... _opcode
+                   <*< (update' <$$$$$>>> _c <*< (bool 0 1 ... (==) <$$$$$>> _getReg    _a <*< _getReg    _b) <*< _regs)
+                   <*< error "not here"
+
+type IP = Int
 
 process :: Input -> Instructions -> (IP,Registers) -> (IP,Registers)
-process = (.) <$$>> ((,) <$$>> succ ... flip V.unsafeIndex . fromIntegral <*< arg2) ... const
-                <*< (behave2 <$$$>> (. fromIntegral . fst) . VB.unsafeIndex ... arg2 <*< uncurry . update' ... const)
+process = (.) <$$>> ((,) <$$>> succ ... flip (V.!) . fromIntegral <*< arg2) ... const
+                <*< (behave <$$$>> (. fromIntegral . fst) . (VB.!) ... arg2 <*< uncurry . update' ... const)
 
 solv :: Registers -> Input -> Instructions -> [(IP, Registers)]
 solv = iterate' <$$$>> const process <*< (0,) ... arg31
@@ -156,9 +192,10 @@ solution1 = solve1 <$> input
 -- 2884703
 
 bar :: (Set Register, [Register]) -> Register -> (Set Register, [Register])
-bar = if' <$$>>> (flip member <&>> fst <*< id)
+bar = if' <$$>>> fst &> flip member <& id
              <*< (,[]) . fst ... const
-             <*< ((,) <$$>> (flip insert <&>> fst <*< id) <*< (flip (:) <&>> snd <*< id))
+             <*< ((,) <$$>> fst &> flip insert <& id
+                        <*< snd &> flip (:) <& id)
 
 solve2 :: [String] -> Register
 solve2 = head . snd . last . takeWhile (not . null . snd) . tail . scanl bar (empty,[]) . fmap ((V.! 5) . snd) . filter ((== 28) . fst) . uncurry (solv (V.fromList [0,0,0,0,0,0])) . second mkInstructions . parseData

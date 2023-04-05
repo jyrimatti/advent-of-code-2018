@@ -3,77 +3,43 @@
 {-# LANGUAGE TypeApplications #-}
 module Day20 where
 
-import           Algorithm.Search          (aStar, bfs)
-import           Control.Applicative       (liftA3, many)
-import           Control.Arrow             (second, (&&&))
+import           Algorithm.Search (aStar, bfs)
+import           Control.Applicative (liftA3, many)
+import           Control.Arrow (second, (&&&))
 import           Control.Conditional (if')
 import           Control.Monad.Combinators (between, sepBy)
-
-import           Data.Bifunctor            (bimap)
-import           Data.Foldable             (toList)
+import           Data.Bifunctor (bimap)
+import           Data.Foldable (toList)
 import           Data.FoldApp (allOf, sumOf)
-import           Data.List                 (intercalate, intersperse, iterate',
-                                            maximumBy)
-import qualified Data.Matrix               as M
-import           Data.Matrix.Unboxed       (Matrix, cols, rows, (!), toLists, toRows, fromLists)
-import           Data.Maybe                (catMaybes, fromJust)
-import           Data.Ord                  (comparing)
-import qualified Data.Sequence             as S
-import           Data.Sequence             (Seq, (<|), (><), (|>))
-import           Data.Tuple.Extra          (both, fst3, thd3, uncurry3)
-import qualified Data.Vector.Unboxed       as V
-import           Data.Zip                  (zipWith, zipWith3)
-import           Prelude                   hiding (zipWith, zipWith3)
-import           Text.Megaparsec           (Parsec, anySingle, optional, parse,
-                                            try, (<|>))
-import           Text.Megaparsec.Char      (char, space, string)
+import           Data.List (intercalate, intersperse, iterate', maximumBy)
+import qualified Data.Matrix as M
+import           Data.Matrix.Unboxed (Matrix, cols, rows, (!), toLists, toRows, fromLists)
+import           Data.Maybe (catMaybes, fromJust)
+import           Data.Ord (comparing)
+import qualified Data.Sequence as S
+import           Data.Sequence (Seq, (<|), (><), (|>))
+import           Data.Tuple.Extra (both, fst3, thd3, uncurry3)
+import qualified Data.Vector.Unboxed as V
+import           Data.Zip (zipWith, zipWith3)
+import           Prelude hiding (zipWith, zipWith3)
+import           Text.Megaparsec (Parsec, anySingle, optional, parse, try, (<|>))
+import           Text.Megaparsec.Char (char, space, string)
 import           Universum.VarArg ((...))
-import Util
-    ( (<$$$$$>>),
-      (<$$$$$>>>),
-      (<$$$$>>),
-      (<$$$$>>>),
-      (<$$$$>>>>),
-      (<$$$>>),
-      (<$$$>>>),
-      (<$$$>>>>),
-      (<$$$>>>>>),
-      (<$$>>),
-      (<$$>>>),
-      (<$$>>>>),
-      (<&>>),
-      (<*<),
-      arg2,
-      arg31,
-      arg32,
-      arg33,
-      arg41,
-      arg42,
-      arg43,
-      arg44,
-      arg51,
-      arg52,
-      arg53,
-      arg54,
-      arg55,
-      compose3,
-      compose4,
-      const2,
-      const4,
-      const5 )
-import Data.Composition ((.***), (.*))
-import Universum (on)
+import           Util ((<$$$$$>>), (<$$$$$>>>), (<$$$$>>), (<$$$$>>>)
+                     , (<$$$$>>>>), (<$$$>>), (<$$$>>>), (<$$$>>>>), (<$$$>>>>>)
+                     , (<$$>>), (<$$>>>), (<$$>>>>), (<&>>), (<*<), arg2, arg31
+                     , arg32, arg33, arg41, arg42, arg43, arg44, arg51, arg52
+                     , arg53, arg54, arg55, compose3, compose4, const2, const4
+                     , const5, (<&), (&>))
+import           Data.Composition ((.***), (.*))
+import           Universum (on)
 
-input :: IO String
+
+input, test1, test2, test3 :: IO String
 input = readFile  "input/input20.txt"
 
-test1 :: IO String
 test1 = readFile  "input/input20_test1.txt"
-
-test2 :: IO String
 test2 = readFile  "input/input20_test2.txt"
-
-test3 :: IO String
 test3 = readFile  "input/input20_test3.txt"
 
 type Parser = Parsec () String
@@ -81,14 +47,9 @@ type Parser = Parsec () String
 type Regex = [Part]
 type Branch = [Part]
 type Coord = (Int,Int)
-data Part = Direction {coord :: Coord} | Br {branches :: [Branch]} | Empty deriving Eq
-instance Show Part where
-  show (Direction ( 0,-1)) = "W"
-  show (Direction (-1, 0)) = "N"
-  show (Direction ( 0, 1)) = "E"
-  show (Direction ( 1, 0)) = "S"
-  show (Br bs)             = "(" <> intercalate "|" (fmap (concatMap show) bs) <> ")"
-  show Empty               = ""
+
+data Part = Direction {coord :: Coord} | Br {branches :: [Branch]} | Empty
+  deriving Eq
 
 -- Parsing
 
@@ -128,14 +89,11 @@ widen = compose4 <$> (<|) <*> (<|) <*> flip (|>) <*> flip (|>)
 newrow :: MapBuilder -> Seq Char
 newrow = (`S.replicate` '#') . S.length . (`S.index` 0)
 
-foo :: (Int, b) -> MapBuilder -> Bool
-foo = (<) <&>> fst <*< flip (-) 5 . height
-
-bar :: (a, Int) -> MapBuilder -> Bool
-bar = (<) <&>> snd <*< flip (-) 5 . width
-
 extendMap :: Coord -> MapBuilder -> MapBuilder
-extendMap = if' @Bool <$$>>> (allOf <$$>>>> (>4) . fst ... const <*< foo <*< (>4) . snd ... const <*< bar)
+extendMap = if' @Bool <$$>>> (allOf <$$>>>> (>4) . fst ... const
+                                        <*< fst &> (<) <& subtract 5 . height
+                                        <*< (>4) . snd ... const
+                                        <*< snd &> (<) <& subtract 5 . width)
                          <*< arg2
                          <*< fmap (widen '#') . (widen <$> newrow <*> id) ... arg2
 
@@ -169,30 +127,34 @@ door = S.adjust' <$$$$$>>> (compose4 <$$$$>>>> (flip S.update ... (mark <$$$$>> 
                        <*< (compose3 <$$$$>>> (+) ... arg42 <*< (+) ... arg44 <*< const4 middle)
                        <*< arg55
 
-extend :: Part -> Coord -> MapBuilder -> (Coord,MapBuilder)
-extend (Direction (dr,dc)) (r,c) = ((r + dr*2,c + dc*2),) . door r c dr dc . room r c dr dc . extendIfNeeded r c dr dc
-extend (Br (b:bs))             c = (extend (Br bs) <$> const c <*> thd3) . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) . (b,c,)
-extend (Br [])                 c = (c,)
-extend Empty                   c = (c,)
-
--- need pattern matching for this...
 isBr :: Part -> Bool
-isBr (Direction _) = False
-isBr (Br _)        = True
-isBr Empty         = False
+--isBr (Direction _) = False
+--isBr (Br _)        = True
+--isBr Empty         = False
+isBr = if' <$> (== Empty) <*> const False <*> (
+       if' <$> (`elem` [Direction (0,-1), Direction (-1, 0), Direction (0,1), Direction (1,0)]) <*> const False <*>
+               const True)
 
-extend2 :: Part -> Coord -> MapBuilder -> (Coord,MapBuilder)
-extend2 = if' <$$>>> (== Empty) ... const
-                 <*< (,) ... arg2 $
-          if' <$$>>> (== Br []) ... const
-                 <*< (,) ... arg2 $
-          if' <$$>>> isBr ... const
-                 <*< ((.) <$$>> (extend <&>> Br . tail . branches <*< id)
-                            <*< thd3 . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) ... ((,,) <&>> head . branches <*< id) )
-                 <*< ((compose4 <$$$$>>>> (baz <$$$$>>>> arg41 <*< (*2) ... arg43 <*< arg42 <*< (*2) ... arg44) <*< door <*< room <*< extendIfNeeded) <$$>>>> fst ... arg2 <*< snd ... arg2 <*< fst . coord ... const <*< snd . coord ... const)
-
-baz :: Int -> Int -> Int -> Int -> a -> ((Int, Int),a)
-baz = (,) ... (,) <$$$$>> ((+) <$$$$>> arg41 <*< arg42) <*< ((+) <$$$$>> arg41 <*< arg42)
+extend :: Part -> Coord -> MapBuilder -> (Coord,MapBuilder)
+--extend (Direction (dr,dc)) (r,c) = ((r + dr*2,c + dc*2),) . door r c dr dc . room r c dr dc . extendIfNeeded r c dr dc
+--extend (Br (b:bs))             c = (extend (Br bs) <$> const c <*> thd3) . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) . (b,c,)
+--extend (Br [])                 c = (c,)
+--extend Empty                   c = (c,)
+extend = if' <$$>>> (== Empty) ... const
+                <*< (,) ... arg2 $
+         if' <$$>>> (== Br []) ... const
+                <*< (,) ... arg2 $
+         if' <$$>>> isBr ... const
+                <*< ((.) <$$>> (Br . tail . branches &> extend <& id)
+                           <*< thd3 . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) ... (head . branches &> (,,) <& id) )
+                <*< ((compose4 <$$$$>>>> ((,) ... (,) <$$$$>> ((+) <$$$$>> arg41 <*< (*2) ... arg43)
+                                                          <*< ((+) <$$$$>> arg42 <*< (*2) ... arg44))
+                                     <*< door
+                                     <*< room
+                                     <*< extendIfNeeded) <$$>>>> fst ... arg2
+                                                             <*< snd ... arg2
+                                                             <*< fst . coord ... const
+                                                             <*< snd . coord ... const)
 
 -- Solving
 
@@ -206,6 +168,7 @@ nextLocs = [(-1,0),(0,-1),(0,1),(1,0)]
 
 xdx :: (Int, b) -> p2 -> (Int, b) -> Int
 xdx = ((+) `on` fst) <$$$>> arg31 <*< arg33
+
 ydy :: (a, Int) -> p2 -> (a, Int) -> Int
 ydy = ((+) `on` snd) <$$$>> arg31 <*< arg33
 
@@ -232,17 +195,17 @@ pathToTarget = fmap snd ... aStar <$$$>>>>> flip nextStates ... arg31
                                         <*< arg32
 
 quux :: (Int, Int) -> (Int, Int) -> Int
-quux = (+) <$$>> abs ... (flip (-) `on` fst)
-             <*< abs ... (flip (-) `on` snd)
+quux = (+) <$$>> abs ... (subtract `on` fst)
+             <*< abs ... (subtract `on` snd)
 
 findCoords :: Char -> Map -> [Coord]
-findCoords = filter (not . null) . concatMap (fmap <$> (,) . fst <*> snd) . zip [0..] ... fmap <&>> (V.toList ... V.findIndices . (==)) <*< toRows
+findCoords = filter (not . null) . concatMap (fmap <$> (,) . fst <*> snd) . zip [0..] ... (V.toList ... V.findIndices . (==) &> fmap <& toRows)
 
 extendBranch :: [Part] -> (Int, Int) -> MapBuilder -> ([Part], (Int, Int), MapBuilder)
 extendBranch = if' <$$>>> null ... const
                       <*< (,,)
                       <*< ((.) <$$>> uncurry . (,,) . tail ... const
-                                 <*< (extend <&>> head <*< id))
+                                 <*< head &> extend <& id)
 
 initialMap :: MapBuilder
 initialMap = extendMap (0,0) . extendMap (0,0) . S.fromList . fmap S.fromList $ [['X']]

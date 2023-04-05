@@ -4,29 +4,24 @@
 {-# LANGUAGE DataKinds #-}
 module Day04 where 
     
-import Control.Arrow              ((&&&))
-import Control.Conditional (if')
-import Control.Lens               (over, makeLenses)
-import Data.Function              (on)
-import Data.Functor.Identity      (Identity)
-import Data.List                  (find, group, groupBy, maximumBy,
-                                             nub, sort, sortOn)
-import Data.List.Extra            (groupOn, groupSortBy, groupSortOn,
-                                             maximumOn)
-import Data.Maybe                     ( fromJust
-                                                , fromMaybe
-                                                , isJust
-                                                )
-import Data.Profunctor                ( rmap )
-import Data.Tuple                 (swap)
-import Data.Tuple.Extra           (both, first, second)
-import Text.Megaparsec            (Parsec, anySingleBut, many,
-                                             optional, parseMaybe, try, (<|>))
-import Text.Megaparsec.Char       (char, letterChar, space, string)
-import Text.Megaparsec.Char.Lexer (decimal, signed)
-import Universum ((...), Generic)
-import Util ( (<$$>>), (<$$>>>), (<&>>), (<*<), const2, singleton )
-import Data.Generics.Product (field)
+import           Control.Arrow ((&&&))
+import           Control.Conditional (if')
+import           Control.Lens (over, makeLenses)
+import           Data.Function (on)
+import           Data.Functor.Identity (Identity)
+import           Data.List (find, group, groupBy, maximumBy, nub, sort, sortOn)
+import           Data.List.Extra (groupOn, groupSortBy, groupSortOn, maximumOn)
+import           Data.Maybe (fromJust, fromMaybe, isJust)
+import           Data.Profunctor (rmap)
+import           Data.Tuple (swap)
+import           Data.Tuple.Extra (both, first, second)
+import           Text.Megaparsec (Parsec, anySingleBut, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum ((...), Generic)
+import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), const2, singleton, (<&), (&>))
+import           Data.Generics.Product (field)
+
 
 
 
@@ -59,7 +54,7 @@ record :: String -> Record
 record = fromJust . parseMaybe recordP
 
 withPreviousGuardIfMissing :: [Record] -> Record -> Record
-withPreviousGuardIfMissing = over (field @"guard") <&>> flip (<|>) . guard . head <*< id
+withPreviousGuardIfMissing = flip (<|>) . guard . head &> over (field @"guard") <& id
 
 withGuardId :: [Record] -> Record -> [Record]
 withGuardId = (:) <$$>> withPreviousGuardIfMissing <*< const
@@ -68,16 +63,18 @@ records :: [String] -> [Record]
 records = reverse . foldl withGuardId [] . fmap record . sort
 
 guardsMatch :: Maybe GuardId -> Maybe GuardId -> Bool
-guardsMatch = (&&) <$$>> (==) <*< ((&&) `on` isJust)
+guardsMatch = (&&) <$$>> (==) <*< ((&&) `on` isJust) -- guardId == guardId AND both are defined
 
 eventsMatch :: Event -> Event -> Bool
-eventsMatch = (&&) <&>> (== FallAsleep) <*< (== WakeUp)
+eventsMatch = (== FallAsleep) &> (&&) <& (== WakeUp) -- first arg is FallAsleep AND second arg is WakeUp
 
 recordsMatch :: Record -> Record -> Bool
-recordsMatch = (&&) <$$>> (guardsMatch `on` guard) <*< (eventsMatch `on` event)
+recordsMatch = (&&) <$$>> (guardsMatch `on` guard) <*< (eventsMatch `on` event) -- both match by guard AND both match by event
 
 minutesForGuard :: Record -> Record -> (GuardId, (Int, Int))
-minutesForGuard = (,) <$$>> fromJust . guard ... const <*< ((,) `on` minute)
+minutesForGuard   = (,) <$$>> fromJust . guard ... const <*< ((,) `on` minute)
+--minutesForGuard = (,) <$$>> fromJust . guard ... const <*< both minute ... (,)
+--minutesForGuard = (,) <$$>> fromJust . guard ... const <*< curry (both minute)
 
 newElement :: Record -> Record -> [(GuardId, (Int, Int))]
 newElement = if' <$$>>> recordsMatch
@@ -89,7 +86,7 @@ collectAsleepMinutes :: (Record, Record) -> [(GuardId, (Int, Int))] -> [(GuardId
 --collectAsleepMinutes (Record m1 (Just g1) FallAsleep, Record m2 (Just g2) WakeUp) xs | g1 == g2 = (g1,(m1,m2)) : xs
 --collectAsleepMinutes _ xs = xs
 --collectAsleepMinutes xs = \case (Record m1 (Just g1) FallAsleep, Record m2 (Just g2) WakeUp) | g1 == g2 -> (g1,(m1,m2)) : xs; _ -> xs
-collectAsleepMinutes = (<>) <&>> uncurry newElement <*< id
+collectAsleepMinutes = uncurry newElement &> (<>) <& id
 
 pairwise :: [a] -> [(a, a)]
 pairwise = zip <$> id <*> tail

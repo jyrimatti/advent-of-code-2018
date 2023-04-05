@@ -1,18 +1,18 @@
 module Day08 where
 
-import Control.Applicative (liftA2)
-import Control.Applicative.Combinators (count)
-import Control.Category ((<<<))
-import Control.Conditional (if')
-import Control.Monad ((<=<))
-import Data.Maybe (fromJust)
-import Text.Megaparsec            (Parsec, anySingle, many, optional,
-                                             parseMaybe, try, (<|>))
-import Text.Megaparsec.Char       (char, letterChar, space, string)
-import Text.Megaparsec.Char.Lexer (decimal, signed)
-import Universum.VarArg ((...))
-import Util ( (<$$>>), (<&>>), (<*<), arg2 )
-import Universum (on)
+import           Control.Applicative (liftA2)
+import           Control.Applicative.Combinators (count)
+import           Control.Category ((<<<))
+import           Control.Conditional (if')
+import           Control.Monad ((<=<))
+import           Data.Maybe (fromJust)
+import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Universum.VarArg ((...))
+import           Util ((<$$>>), (<&>>), (<*<), arg2, (<&), (&>))
+import           Universum (on)
+
 
 input :: IO String
 input = readFile "input/input08.txt"
@@ -30,7 +30,8 @@ data Node = Node {
 type Parser = Parsec () String
 
 headerP :: Parser Header
-headerP = Header <$> (optional (char ' ') *> decimal <* char ' ') <*> decimal
+headerP = Header <$> (optional (char ' ') *> decimal <* char ' ')
+                 <*> decimal
 
 metadataP :: Parser Int
 metadataP = char ' ' *> decimal
@@ -41,7 +42,8 @@ nodeP :: Parser Node
 --    children <- count c nodeP
 --    metadata <- count m metadataP
 --    pure $ Node children metadata
-nodeP = headerP >>= (liftA2 Node <$> ($ nodeP) . count . childNodes <*> ($ metadataP) . count . metadataNodes)
+nodeP = headerP >>= (liftA2 Node <$> (`count` nodeP) . childNodes
+                                 <*> (`count` metadataP) . metadataNodes)
 
 tree :: String -> Node
 tree = fromJust . parseMaybe nodeP
@@ -49,22 +51,21 @@ tree = fromJust . parseMaybe nodeP
 sumMetadata :: Node -> Int
 sumMetadata = ((+) `on` sum) <$> fmap sumMetadata . children <*> metadata
 
+solve1 :: String -> Int
 solve1 = sumMetadata . tree
 
 value :: Node -> Int
-value (Node [] metadata)       = sum metadata
-value (Node children metadata) = (sum . fmap (value . (\m -> children !! (m-1))) . filter (\m -> m > 0 && m <= length children)) metadata
-
-value2 :: Node -> Int
-value2 = sum ... if' <$> null . children
-                     <*> metadata
-                     <*> ( ((.) <$> mapToValueOfReferredChild <*> metadataEntriesReferringToChild) <$> children <*> metadata )
+--value (Node [] metadata)       = sum metadata
+--value (Node children metadata) = (sum . fmap (value . (\m -> children !! (m-1))) . filter (\m -> m > 0 && m <= length children)) metadata
+value = sum ... if' <$> null . children
+                    <*> metadata
+                    <*> ( ((.) <$> mapToValueOfReferredChild <*> metadataEntriesReferringToChild) <$> children <*> metadata )
 
 mapToValueOfReferredChild :: [Node] -> [Int] -> [Int]
-mapToValueOfReferredChild = fmap . (value ... (!!) <&>> id <*< pred)
+mapToValueOfReferredChild = fmap . (value ... (id &> (!!) <& pred))
 
 metadataEntriesReferringToChild :: [a] -> [Int] -> [Int]
-metadataEntriesReferringToChild = filter . ((&&) <$$>> (> 0) ... arg2 <*< flip (<=) . length)
+metadataEntriesReferringToChild = filter . ((&&) <$$>> (> 0) ... arg2 <*< (>=) . length)
 
 solve2 :: String -> Int
 solve2 = value . tree

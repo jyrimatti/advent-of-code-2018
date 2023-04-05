@@ -2,24 +2,17 @@
 module Day14 where
 
 import           Control.Conditional (if')
-import Control.Lens ( over, makeLenses )
-import           Data.Foldable    (toList)
-import           Data.List        (isPrefixOf, isSuffixOf, iterate', tails)
+import           Control.Lens (over, makeLenses)
+import           Data.Foldable (toList)
+import           Data.List (isPrefixOf, isSuffixOf, iterate', tails)
 import           Data.Maybe (fromJust, maybeToList)
-import qualified Data.Sequence    as S
-import           Data.Sequence    ((><), (|>))
+import qualified Data.Sequence as S
+import           Data.Sequence ((><), (|>))
 import           Data.Tuple.Extra (both)
-import           Prelude          hiding ((++))
+import           Prelude hiding (last, init, (++))
 import           Universum.VarArg ((...))
-import Util
-    ( (<$$>>),
-      (<$$>>>),
-      (<&>>),
-      (<*<),
-      arg2,
-      compose3,
-      const2,
-      singleton )
+import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, compose3, const2, singleton, (<&), (&>))
+
 
 input :: Int
 input = 607331
@@ -31,6 +24,7 @@ newtype Elf = Elf {
 makeLenses  ''Elf
 
 type Recipies = S.Seq Int
+
 (!) :: S.Seq a -> Int -> a
 (!) = S.index
 
@@ -45,12 +39,12 @@ toDigits = fmap (read . singleton) . show
 
 newRecipies :: Recipies -> (Elf,Elf) -> [Int]
 --newRecipies recipies (Elf current1,Elf current2) = toDigits ((recipies ! current1) + (recipies ! current2))
-newRecipies = toDigits ... (+) <$$>> ((!) <&>> id <*< _current . fst)
-                                 <*< ((!) <&>> id <*< _current . snd)
+newRecipies = toDigits ... (+) <$$>> id &> (!) <& _current . fst
+                                 <*< id &> (!) <& _current . snd
 
 updateRecipie :: Recipies -> Elf -> Elf
 --updateRecipie recipies elf@(Elf current) = elf { _current = (current + (recipies ! current) + 1) `mod` length recipies }
-updateRecipie = over current <&>> modifier <*< id
+updateRecipie = modifier &> over current <& id
 
 modifier :: Recipies -> Int -> Int
 modifier = mod <$$>> succ ... ((+) <$$>> arg2 <*< (!))
@@ -63,17 +57,20 @@ updatedRecipies :: Recipies -> (Elf, Elf) -> Recipies
 updatedRecipies = (><) <$$>> const <*< S.fromList ... newRecipies
 
 step :: Recipies -> (Elf,Elf) -> (Recipies,(Elf,Elf))
-step = ((,) <$$>> const <*< (both <$$>> updateRecipie ... const <*< arg2)) <$$>> updatedRecipies <*< arg2
+step = ((,) <$$>> const <*< (updateRecipie &> both <& id)) <$$>> updatedRecipies <*< arg2
+
+-- last element of a Seq without pattern matching
+last :: S.Seq a -> a
+last = fromJust ... S.lookup <$> pred . length <*> id
+
+-- init of a Seq without pattern matching
+init :: S.Seq a -> S.Seq a
+init = fromJust ... S.lookup <$> pred . length <*> S.inits
 
 foo2 :: Int -> S.Seq Int -> [Int]
-foo2 n seq = case S.viewr seq of
-    s S.:> r -> r : lastnReversed (n-1) s
-    S.EmptyR -> []
--- Not performant enough
---foo2 = if' <$$>>> null ... arg2
---              <*< const2 []
---              <*< ((:) <$$>> fromJust . (S.lookup <$> pred . length <*> id) ... arg2
---                         <*< (lastnReversed <&>> pred <*< id))
+foo2 = if' <$$>>> null ... arg2
+              <*< const2 []
+              <*< ((:) <$$>> last ... arg2 <*< pred &> lastnReversed <& init)
 
 lastnReversed :: Int -> Recipies -> [Int]
 lastnReversed = if' <$$>>> (== 0) ... const
@@ -82,14 +79,16 @@ lastnReversed = if' <$$>>> (== 0) ... const
                        <*< maybeToList . (S.lookup <$> pred . length <*> id) ... arg2
                        <*< foo2
 
-bar :: Int -> [(S.Seq a, (b, b1))] -> S.Seq a
-bar = fst . fmap fst . head ... dropWhile . (. length . fst) . (>) . (+10)
+bar :: (Int -> Bool) -> [(S.Seq a, (b, b1))] -> S.Seq a
+--bar pred = fst . head . dropWhile (pred . length . fst)
+--bar = fst . head ... dropWhile . (. length . fst)
+bar = (. length) &> head ... dropWhile <& fmap fst
 
 steps :: [(Recipies, (Elf, Elf))]
 steps = iterate' (uncurry step) (recipies, elves)
 
 solve1 :: Int -> String
-solve1 = (concatMap show ... (.) <$> S.drop <*> bar) <$> id <*> const steps
+solve1 = (concatMap show ... (.) <$> S.drop <*> bar . (>) . (+10)) <$> id <*> const steps
 
 -- What are the scores of the ten recipes immediately after the number of recipes in your puzzle input?
 solution1 :: String
@@ -109,7 +108,12 @@ quux3 = (&&) <$$>> ((.) <$> (/=) <*> tail ... lastnReversed . succ . length)
                <*< not ... isReversedSuffix
 
 solve2 :: Int -> Int
-solve2 = flip (compose3 <$> flip (-) . length <*> quux2 <*> head ... dropWhile . quux3) (fmap fst steps) . reverse . toDigits
+--solve2 input = let
+--    digits = reverse $ toDigits input
+--    dgs = length digits
+--  in
+--    (\x -> x - dgs) . (\xs -> if lastnReversed dgs xs == digits then length xs else length xs - 1) . head . dropWhile ((&&) <$> (/= digits) . tail . lastnReversed (dgs+1) <*> (/= digits) . lastnReversed dgs) $ fmap fst steps
+solve2 = flip (compose3 <$> subtract . length <*> quux2 <*> head ... dropWhile . quux3) (fmap fst steps) . reverse . toDigits
 
 -- How many recipes appear on the scoreboard to the left of the score sequence in your puzzle input?
 solution2 :: Int

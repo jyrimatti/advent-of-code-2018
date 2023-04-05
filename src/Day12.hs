@@ -2,21 +2,21 @@
 module Day12 where
 
 import           Control.Conditional (if')
-import Control.Lens ( set, makeLenses )
-import           Data.Foldable                        (toList)
+import           Control.Lens (set, makeLenses)
+import           Data.Foldable (toList)
 import           Data.FoldApp (listOf)
-import           Data.List                            (iterate')
-import qualified Data.Map.Strict                      as M
-import           Data.Maybe                           (fromJust, fromMaybe)
-import qualified Data.Sequence                        as S
-import           Data.Sequence                        (Seq ((:<|), (:|>)), (<|), (|>))
-import           Data.Tuple.Extra                     (both)
-import           Text.Megaparsec            (Parsec, anySingle, many, optional,
-                                             parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char       (char, letterChar, space, string)
+import           Data.List (iterate')
+import qualified Data.Map.Strict as M
+import           Data.Maybe (fromJust, fromMaybe)
+import qualified Data.Sequence as S
+import           Data.Sequence (Seq((:<|), (:|>)), (<|), (|>))
+import           Data.Tuple.Extra (both)
+import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
+import           Text.Megaparsec.Char (char, letterChar, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Universum.VarArg ((...))
-import Util ( (<$$>>), (<$$>>>), (<$$>>>>>>), (<&>>), (<*<), arg2 )
+import           Util ((<$$>>), (<$$>>>), (<$$>>>>>>), (<&>>), (<*<), arg2, arg1, (&>), (<&))
+
 
 input :: IO [String]
 input = lines <$> readFile "input/input12.txt"
@@ -24,7 +24,7 @@ input = lines <$> readFile "input/input12.txt"
 type State = Char
 
 data Pot = Pot {
-    _num :: Int,
+    _num   :: Int,
     _state :: State
 } deriving (Show, Eq)
 
@@ -42,11 +42,11 @@ initialState :: String -> [Pot]
 initialState = fmap (uncurry Pot) . zip [0..] . fromJust . parseMaybe initialStateP
 
 data Note = Note {
-    ll :: State,
-    l :: State,
-    cur :: State,
-    r :: State,
-    rr :: State,
+    ll     :: State,
+    l      :: State,
+    cur    :: State,
+    r      :: State,
+    rr     :: State,
     target :: State
 } deriving Show
 
@@ -66,7 +66,7 @@ firstStates :: Int -> Seq Pot -> [State]
 firstStates = fmap _state . toList ... S.take
 
 lastStates :: Int -> Seq Pot -> [State]
-lastStates = fmap _state . toList ... (S.drop <$$>> (flip (-) <&>> id <*< S.length) <*< arg2)
+lastStates = fmap _state . toList ... (S.drop <$$>> ((-) <$$>> S.length ... arg2 <*< arg1) <*< arg2)
 
 extendLeft :: Seq Pot -> Seq Pot
 --extendLeft pots@(Pot _ '.' :<| Pot _ '.' :<| Pot _ '.' :<| Pot _ '.' :<| ps)  = extendLeft ps
@@ -76,14 +76,14 @@ extendLeft = if' <$> (== "....") . firstStates 4
                  <*> extendLeft . S.drop 4 <*> (
              if' <$> (== "...") . firstStates 3
                  <*> id
-                 <*> extendLeft . ((<|) <$> flip Pot '.' . pred . valueOfFirst <*> id) )
+                 <*> extendLeft . ((<|) <$> (`Pot` '.') . pred . valueOfFirst <*> id) )
 
 extendRight :: Seq Pot -> Seq Pot
 extendRight = if' <$> (== "....") . lastStates 4
-                  <*> extendRight . (S.take <$> flip (-) 4 . S.length <*> id) <*> (
+                  <*> extendRight . (S.take <$> subtract 4 . S.length <*> id) <*> (
               if' <$> (== "...") . lastStates 3
                   <*> id
-                  <*> extendRight . ((|>) <$> id <*> flip Pot '.' . succ . valueOfLast) )
+                  <*> extendRight . ((|>) <$> id <*> (`Pot` '.') . succ . valueOfLast) )
 
 extend :: Seq Pot -> Seq Pot
 extend = extendRight . extendLeft
@@ -93,13 +93,15 @@ findTarget :: M.Map [State] Char -> [State] -> Char
 findTarget = fromMaybe '.' ... (M.!?)
 
 lookupOffset :: (Int -> Int) -> Seq Pot -> Int -> Pot
-lookupOffset f = fromJust ... (S.lookup <$$>> f ... arg2 <*< const)
+--lookupOffset f = fromJust ... flip S.lookup <&>> id <*< f
+lookupOffset = fromJust ... flip . (S.lookup .)
 
+-- for type inference:
 mkList5 :: a -> a -> a -> a -> a -> [a]
 mkList5 = listOf
 
 transform :: Seq Pot -> Int -> M.Map [State] Char -> Pot
-{-transform pots index _ | index <= 1 || index >= length pots - 2 = fromJust $ S.lookup index pots
+{-transform pots index _ | index <= 1 || length pots - 2 <= index = fromJust $ S.lookup index pots
 transform pots index notes = let
     (Pot _ ll1)    = fromJust $ S.lookup (index-2) pots
     (Pot _ l1)     = fromJust $ S.lookup (index-1) pots
@@ -110,7 +112,7 @@ transform pots index notes = let
     p { state = findTarget notes [ll1,l1,cur1,r1,rr1] }
 -}
 transform = if' <$$>>> ( (||) <$$>> (<= 1) ... arg2
-                                <*< ((<=) <&>> pred . pred . length <*< id) )
+                                <*< subtract 2 . length &> (<=) <& id )
                    <*< const ... lookupOffset id
                    <*< (flip . flip (set state ... findTarget) ... mkList5 <$$>>>>>> -- oh god...
                                    _state ... lookupOffset (pred . pred)
@@ -137,7 +139,8 @@ takeUntilDuplicate :: [Seq Pot] -> [Seq Pot]
 takeUntilDuplicate = fmap snd . takeWhile (uncurry (/=) . both (fmap _state)) . pairWithNext
 
 remainingGenerations :: Int -> [Seq Pot] -> Int
-remainingGenerations = (-) <&>> id <*< length
+--remainingGenerations = (-) <&>> id <*< length
+remainingGenerations = id &> (-) <& length
 
 occupiedPots :: Seq Pot -> Seq Pot
 occupiedPots = S.filter ((== '#') . _state)
@@ -156,7 +159,7 @@ getSum :: Int -> [Seq Pot] -> Int
 getSum = if' <$$>>> null ... drop 
                 <*< ( (+) <$$>> calculateSum . last ... arg2
                             <*< ((*) <$$>> remainingGenerations <*< amountToAddToMissingGenerations ... arg2) )
-                <*< calculateSum ... (flip (!!) <&>> pred <*< id)
+                <*< calculateSum ... (pred &> flip (!!) <& id)
 
 initState :: [String] -> Seq Pot
 initState = S.fromList . initialState . head
@@ -165,8 +168,7 @@ notes :: [String] -> M.Map [State] State
 notes = M.fromList . fmap ( ((,) <$> (listOf <$> ll <*> l <*> cur <*> r <*> rr) <*> target) . note) . drop 2
 
 solve :: Int -> [String] -> Int
-solve = getSum <&>> id
-                <*< takeUntilDuplicate . (iterate' <$> transformAll . notes <*> initState)
+solve = id &> getSum <& takeUntilDuplicate . (iterate' <$> transformAll . notes <*> initState)
 
 -- After 20 generations, what is the sum of the numbers of all pots which contain a plant?
 solution1 :: IO Int
