@@ -1,29 +1,32 @@
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections   #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Day13 where
 
+import           GHC.Generics (Generic)
 import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import           Control.Lens (over, set, makeLenses)
-import           Data.Bifunctor (second)
+import           Control.Lens (over, set)
+import           Data.Composition ((.*))
 import           Data.FoldApp (allOf)
 import           Data.Function (on)
-import           Data.List (cycle, groupBy, iterate', nub, nubBy, sort, sortBy, (\\), sortOn)
+import           Data.Generics.Product (field)
+import           Data.List (iterate', sortOn, singleton)
 import           Data.List.Extra (groupOn)
 import qualified Data.Matrix as M
 import           Data.Matrix (Matrix, (!))
-import           Data.Maybe (catMaybes, fromJust, isJust, isNothing, listToMaybe)
+import           Data.Maybe (catMaybes, fromJust, isJust)
 import           Data.Tuple (swap)
 import qualified Data.Vector as V
 import           Data.Vector (Vector)
-import           Prelude hiding (Either(Left, Right))
-import           Universum.VarArg ((...))
+import           Universum ((...))
 import           Util ((<$$$$$>>), (<$$$$$>>>), (<$$$$>>), (<$$$>>), (<$$$>>>)
                      , (<$$>>), (<$$>>>), (<&>>), (<&>>>), (<&>>>>), (<*<)
                      , anyOf, arg2, arg31, arg32, arg33, arg41, arg42, arg43
                      , arg44, arg51, arg52, arg53, arg54, arg55, compose3
-                     , const2, singleton, (<&), (&>))
+                     , const2, (<&), (&>))
+import           Prelude hiding (Either(Left, Right))
 
 
 input :: IO [String]
@@ -43,19 +46,17 @@ data Move = Left | Straight | Right
 type Coordinate = (Int,Int)
 
 data Cart = Cart {
-    _prevTurn  :: Move,
-    _direction :: Char,
-    _loc       :: Coordinate
-} deriving (Show, Eq)
-
-makeLenses ''Cart
+    prevTurn  :: Move,
+    direction :: Char,
+    loc       :: Coordinate
+} deriving (Show, Eq, Generic)
 
 type Map = Matrix Char
 type Carts = Vector Cart
 
 foo :: Coordinate -> Char -> Maybe (Char, Coordinate)
 foo = if' <$$>>> isCart ... arg2
-             <*< Just . swap ... (,)
+             <*< Just . swap .* (,)
              <*< const2 Nothing
 
 carts :: Map -> Carts
@@ -100,7 +101,7 @@ action (Cart Straight '>' l) '+'  = Cart Right    'v' $ move l ( 1, 0)
 action (Cart Right    '>' l) '+'  = Cart Left     '^' $ move l (-1, 0)
 -}
 
-action = if' <$$>>> (== 'x') . _direction ... const <*< const $
+action = if' <$$>>> (== 'x') . direction ... const <*< const $
          if' <$$>>> match '^' '|' <*< justMove (-1, 0) $
          if' <$$>>> match 'v' '|' <*< justMove ( 1, 0) $
          if' <$$>>> match '<' '-' <*< justMove ( 0,-1) $
@@ -132,40 +133,40 @@ action = if' <$$>>> (== 'x') . _direction ... const <*< const $
          error "shouldn't be here"
 
 match :: Char -> Char -> Cart -> Char -> Bool
-match = (&&) <$$$$>> ((==) <$$$$>> arg41 <*< _direction ... arg43)
+match = (&&) <$$$$>> ((==) <$$$$>> arg41 <*< direction ... arg43)
                  <*< ((==) <$$$$>> arg42 <*< arg44)
 
 match2 :: Move -> Char -> Char -> Cart -> Char -> Bool
-match2 = allOf <$$$$$>>> ((==) <$$$$$>> arg52 <*< _direction ... arg54)
+match2 = allOf <$$$$$>>> ((==) <$$$$$>> arg52 <*< direction ... arg54)
                      <*< ((==) <$$$$$>> arg53 <*< arg55)
-                     <*< ((==) <$$$$$>> arg51 <*< _prevTurn ... arg54)
+                     <*< ((==) <$$$$$>> arg51 <*< prevTurn ... arg54)
 
 justMove :: Coordinate -> Cart -> ignore -> Cart
-justMove = over loc . move &> const ... ($) <& id
+justMove = over (field @"loc") . move &> const ... ($) <& id
 
 moveTurn :: Coordinate -> Char -> Cart -> ignore -> Cart
-moveTurn = const ... ($) . (.) <&>>> over loc . move
-                                 <*< set direction
+moveTurn = const ... ($) . (.) <&>>> over (field @"loc") . move
+                                 <*< set (field @"direction")
                                  <*< id
 
 moveTurnStep :: Coordinate -> Char -> Move -> Cart -> ignore -> Cart
-moveTurnStep = const ... compose3 <&>>>> over loc . move
-                                     <*< set direction
-                                     <*< set prevTurn
+moveTurnStep = const ... compose3 <&>>>> over (field @"loc") . move
+                                     <*< set (field @"direction")
+                                     <*< set (field @"prevTurn")
                                      <*< id
 
 act :: Map -> Cart -> Cart
 -- act map = action <$> id <*> ((map !) . loc)
-act = action <$$>> arg2 <*< (id &> (!) <& _loc)
+act = action <$$>> arg2 <*< (id &> (!) <& loc)
 
 collided :: Cart -> Bool
-collided = (== 'x') . _direction
+collided = (== 'x') . direction
 
 findColliding :: Carts -> [Cart]
-findColliding = concat . filter ((> 1) . length) . groupOn _loc . filter (not . collided) . V.toList
+findColliding = concat . filter ((> 1) . length) . groupOn loc . filter (not . collided) . V.toList
 
 collidingWithIndex :: Carts -> [(Int,Cart)]
-collidingWithIndex = fmap . (&&& set direction 'x') <$> fromJust ... flip V.elemIndex <*> findColliding
+collidingWithIndex = fmap . (&&& set (field @"direction") 'x') <$> fromJust ... flip V.elemIndex <*> findColliding
 
 markColliding :: Carts -> Carts
 markColliding = (V.//) <$> id <*> collidingWithIndex
@@ -173,7 +174,7 @@ markColliding = (V.//) <$> id <*> collidingWithIndex
 step :: (Cart -> Cart) -> Carts -> Int -> Carts
 --step act carts cartIndex = markColliding $ carts V.// [(cartIndex, act (carts V.! cartIndex))]
 --step = markColliding ... flip (V.//) . singleton ... (,) <$$$>>> arg33 <*< (. (V.!)) . (.) <*< arg32 -- uugh...
-step = markColliding ... (V.//) <$$$>> arg32 <*< ( singleton ... (,) <$$$>> arg33 <*< (... (V.!)) )
+step = markColliding ... (V.//) <$$$>> arg32 <*< ( singleton .* (,) <$$$>> arg33 <*< (... (V.!)) )
 
 tick :: Map -> Carts -> [Carts]
 --tick = take <$$>> length ... arg2
@@ -182,7 +183,7 @@ tick = take <$$>> length ... arg2
               <*< ((,) <$$>> uncurry . step . act <*< succ . snd ... arg2) &> tail . fmap fst ... iterate' <& (,0)
 
 sortByLocation :: Carts -> Carts
-sortByLocation = V.fromList . sortOn _loc . V.toList
+sortByLocation = V.fromList . sortOn loc . V.toList
 
 ticks :: Map -> Carts -> [[Carts]]
 --ticks map = iterate' (tick map . sortByLocation . last) . singleton
@@ -194,8 +195,8 @@ withCarts :: Carts -> Map -> Map
 --withCarts carts = M.imap $ \i c -> case V.find ((== i) . _loc) carts of
 --    Just (Cart _ d _) -> d
 --    Nothing           -> c
-withCarts = M.imap . (if' <$$$>>> isJust ...                (V.find <$$$>> (. _loc) . (==) ... arg32 <*< arg31)
-                              <*< _direction . fromJust ... (V.find <$$$>> (. _loc) . (==) ... arg32 <*< arg31)
+withCarts = M.imap . (if' <$$$>>> isJust               ... (V.find <$$$>> (. loc) . (==) ... arg32 <*< arg31)
+                              <*< direction . fromJust ... (V.find <$$$>> (. loc) . (==) ... arg32 <*< arg31)
                               <*< arg33)
 
 withoutCarts :: Map -> Map
@@ -215,7 +216,7 @@ solve :: [String] -> ([[Carts]], Map)
 solve = ( (,) ... ticks <$> withoutCarts <*> carts <*> withoutCarts) . M.fromLists
 
 solve1 :: [String] -> (Int, Int)
-solve1 = swap . _loc . fromJust . V.find collided . head . dropWhile (null . V.filter collided) . concat . fst . solve
+solve1 = swap . loc . fromJust . V.find collided . head . dropWhile (null . V.filter collided) . concat . fst . solve
 
 -- the location of the first crash
 solution1 :: IO (Int, Int)
@@ -226,7 +227,7 @@ hasMultipleCarts :: Carts -> Bool
 hasMultipleCarts = (> 1) . length . V.filter (not . collided)
 
 solve2 :: [String] -> (Int, Int)
-solve2 = swap . _loc . fromJust . V.find (not . collided) . last . head . dropWhile (hasMultipleCarts . last) . fst . solve
+solve2 = swap . loc . fromJust . V.find (not . collided) . last . head . dropWhile (hasMultipleCarts . last) . fst . solve
 
 -- What is the location of the last cart 
 solution2 :: IO (Int, Int)

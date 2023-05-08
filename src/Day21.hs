@@ -4,27 +4,23 @@
 {-# LANGUAGE TupleSections         #-}
 module Day21 where
 
-import           Control.Applicative.Combinators (between, count, optional, sepBy)
+import           Control.Applicative.Combinators (many)
 import           Control.Conditional (if', bool)
 import           Control.Arrow (second, (&&&))
 import           Data.Bifunctor (bimap)
 import           Data.Bits ((.&.), (.|.))
-import           Data.Either (fromLeft, isLeft, isRight)
-import           Data.Function (on)
-import           Data.List (iterate')
-import           Data.List.Split (chunksOf)
-import           Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
-import           Data.Ord (comparing)
-import           Data.Set (Set, empty, insert, member)
+import           Data.Composition ((.*))
+import           Data.List (iterate', singleton)
+import           Data.Maybe (fromJust)
+import           Data.Set (Set, empty, insert)
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector as VB
-import           Prelude hiding ((!!))
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char, letterChar, string)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
 import           Util ((<$$$>>), (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, arg31
-                     , singleton, uncurry4, (<&), (&>), (<$$$$$>>>), (<$$$$$>>)
+                     , uncurry4, (<&), (&>), (<$$$$$>>>), (<$$$$$>>)
                      , arg51, arg52, arg53, arg54, arg55, arg1, (<$$>>>>>))
 
 
@@ -40,7 +36,7 @@ instrP :: Parser (Opcode,Int,Int,Int)
 instrP = (,,,) <$> (toOpcode <$> many letterChar) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal) <*> (char ' ' *> decimal)
 
 toOpcode :: String -> Opcode
-toOpcode = 
+toOpcode =
     if' <$> (== "addr") <*> const AddR <*> (
     if' <$> (== "addi") <*> const AddI <*> (
     if' <$> (== "mulr") <*> const MulR <*> (
@@ -100,7 +96,7 @@ mkInstructions = VB.fromList . fmap (uncurry4 Instruction)
 -- Process
 
 update' :: Input -> Int -> Registers -> Registers
-update' = flip V.unsafeUpd . singleton ... (,) . fromIntegral
+update' = flip V.unsafeUpd . singleton .* (,) . fromIntegral
 
 -- some renaming for 'behave'
 _opcode :: p1 -> p2 -> p3 -> p4 -> p5 -> p1
@@ -192,7 +188,7 @@ solution1 = solve1 <$> input
 -- 2884703
 
 bar :: (Set Register, [Register]) -> Register -> (Set Register, [Register])
-bar = if' <$$>>> fst &> flip member <& id
+bar = if' <$$>>> fst &> flip elem <& id
              <*< (,[]) . fst ... const
              <*< ((,) <$$>> fst &> flip insert <& id
                         <*< snd &> flip (:) <& id)

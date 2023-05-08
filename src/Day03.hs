@@ -1,19 +1,16 @@
 module Day03 where
 
 import           Control.Applicative (liftA2)
-import           Control.Arrow ((&&&))
-import           Data.List (find, group, groupBy, sort, sortBy)
+import           Data.Aviary.Birds (dove, goldfinch)
+import           Data.Foldable (find)
 import           Data.List.Extra (groupSortOn)
 import           Data.Maybe (fromJust)
-import           Data.Profunctor (Profunctor(lmap))
-import           Data.Set as Set (fromList, notMember)
-import           Data.Tuple.Extra (snd3, thd3)
-import           Text.Megaparsec (Parsec, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
+import           Data.Set as Set (fromList)
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char, string)
+import           Text.Megaparsec.Char.Lexer (decimal)
 import           Universum ((...))
 import           Util ((&>), (<&), (<&>>), (<*<))
-
 
 
 input :: IO [Claim]
@@ -35,6 +32,7 @@ claimP = Claim <$> (char   '#'   *> decimal)
                <*> (char   ','   *> decimal)
                <*> (string ": "  *> decimal)
                <*> (char   'x'   *> decimal)
+-- applicative parsing is quite naturally point-free
 
 claim :: String -> Claim
 claim = fromJust . parseMaybe claimP
@@ -42,9 +40,12 @@ claim = fromJust . parseMaybe claimP
 range :: Int -- amount
       -> Int -- start
       -> [Int]
--- range = flip (dove take) enumFrom
---range = take <&>> id <*< enumFrom
-range = id &> take <& enumFrom
+--range amount start = take amount [start..]    -- Pointfull.
+--range = (. enumFrom) . take                   -- What pointfree.io returns.
+--range = flip (dove take) enumFrom             -- Using a Bird.
+--range = goldfinch take enumFrom               -- Or another Bird
+--range = take <&>> id <*< enumFrom             -- With a general "pass each arg through a separate function"
+range = id &> take <& enumFrom                  -- Or the same with a nicer syntax
 
 allPairs :: [Int] -> [Int] -> [(Int, Int)]
 -- allPairs xs ys = (,) <$> xs <*> ys          -- readable version, but pointful :(
@@ -77,7 +78,7 @@ claimIds :: [IdsAndInches] -> [Int]
 claimIds = concatMap (fmap fst)
 
 claimIdsOfInchesWithClaims :: (Int -> Bool) -> [IdsAndInches] -> [Int]
---claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length)   -- readable, but not point-free
+--claimIdsOfInchesWithClaims predicate = claimIds . filter (predicate . length)   -- readable, but pointful
 --claimIdsOfInchesWithClaims = (claimIds .) . filter . (. length)                 -- kind of elegant, but difficult to comprehend
 --claimIdsOfInchesWithClaims =  claimIds ... filter . (. length)                  -- "just transform the 1. arg to filter" but a bit difficult to graps how the data flows
 --claimIdsOfInchesWithClaims = dimap (. length) (claimIds .) filter               -- profunctor makes this kind of thing...
@@ -85,7 +86,7 @@ claimIdsOfInchesWithClaims :: (Int -> Bool) -> [IdsAndInches] -> [Int]
 claimIdsOfInchesWithClaims = (. length) &> claimIds ... filter <& id              -- "first arg (predicate) prefixed by length, second passed as-is"
 
 findNonOverlapping :: [IdsAndInches] -> Maybe Int
-findNonOverlapping = find <$> flip notMember . Set.fromList . claimIdsOfInchesWithClaims (> 1)
+findNonOverlapping = find <$> flip notElem . Set.fromList . claimIdsOfInchesWithClaims (> 1)
                           <*> claimIdsOfInchesWithClaims (== 1)
 
 solve2 :: [Claim] -> Int

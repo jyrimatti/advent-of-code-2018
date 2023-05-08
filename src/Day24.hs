@@ -4,35 +4,33 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Day24 where
 
-import           Algorithm.Search (bfs)
+import           GHC.Generics (Generic)
 import           Control.Arrow ((&&&))
-import           Control.Monad ((>=>))
-import           Control.Monad.Combinators (between, manyTill, sepBy)
-import           Data.Bifunctor (bimap, first, second, Bifunctor)
+import           Control.Applicative.Combinators (between, many, manyTill, sepBy, optional, (<|>))
+import           Control.Conditional (if')
+import           Control.Lens (over)
+import           Data.Bifunctor (first, second)
+import           Data.Composition ((.*), (.****))
 import           Data.Foldable (maximumBy, toList)
 import           Data.Function (on)
-import           Data.List (cycle, delete, group, groupBy, iterate', nub, nubBy, sort, sortBy, sortOn, zip, (\\))
-import           Data.List.Extra (groupSortBy)
+import           Data.Generics.Product (HasField(..))
+import           Data.List (groupBy, iterate', sortOn, zip, (\\))
+import           Data.List.Extra (nubOrd)
 import qualified Data.Matrix as M
-import           Data.Matrix (Matrix, (!))
-import           Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import           Data.Matrix (Matrix)
+import           Data.Maybe (fromJust, fromMaybe, isNothing, mapMaybe)
 import           Data.Ord (Down(..), comparing)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq(..))
-import           Data.Tuple (swap)
-import           Data.Tuple.Extra (both, swap)
+import           Data.Tuple.Extra (both)
 import qualified Data.Vector as V
 import           Data.Vector (Vector)
-import           Debug.Trace ()
-import           Prelude hiding (Either(Left, Right), round)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parse, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec (Parsec, anySingle, parse, try)
+import           Text.Megaparsec.Char (char, letterChar, string)
 import           Text.Megaparsec.Char.Lexer (decimal)
-import           Universum ((...), over, Generic)
-import           Data.Composition ((.**), (.***), (.*), (.****), compose2)
+import           Universum ((...))
 import           Util ((<&), (&>), (<$$>>>>), (<*<), const2, (<$$>>>), (<$$>>), (<&>>), arg2, arg1, (<$$$>>), arg32, arg33)
-import           Control.Conditional (if')
-import           Data.Generics.Product (setField, HasField(..))
+
 
 inputLines :: FilePath -> IO [String]
 inputLines = fmap lines . readFile 
@@ -84,7 +82,7 @@ army :: [String] -> [Group]
 --    name = either undefined id . parse armyP "" . head $ lines
 --  in
 --    fmap (either undefined ($ name) . parse (groupP) "") . tail $ lines
-army = fmap . flip ($) <$> either undefined id . parse armyP "" . head
+army = fmap . flip ($) <$>       either undefined id . parse armyP  ""  . head
                        <*> fmap (either undefined id . parse groupP "") . tail
 
 effectivePower :: Group -> Int
@@ -194,7 +192,7 @@ skipWhileAdvancing :: [[Group]] -> [[Group]]
 skipWhileAdvancing = fmap snd . dropWhile (uncurry (/=)) . (zip <$> id <*> tail)
 
 onlySingleArmy :: [Group] -> Bool
-onlySingleArmy = (== 1) . length . nub . fmap armyName
+onlySingleArmy = (== 1) . length . nubOrd . fmap armyName
 
 solve1 :: Int -> [String] -> [Group]
 solve1 = concat . take 1 . takeWhile onlySingleArmy . skipWhileAdvancing . iterate' step . uncurry (<>) ... (. both army . second tail . span (/= "")) . boost
@@ -206,7 +204,7 @@ solution1 = sum . fmap units . solve1 0 <$> input
 
 sameArmy :: [Group] -> [Group] -> Bool
 --sameArmy a b = nub (fmap armyName a) == nub (fmap armyName b)
-sameArmy = (==) `on` nub . fmap armyName
+sameArmy = (==) `on` nubOrd . fmap armyName
 
 solve2 :: [String] -> Int
 solve2 = sum . fmap units . head . (!! 1) . groupBy sameArmy . filter (not . null) . traverse solve1 [0..]

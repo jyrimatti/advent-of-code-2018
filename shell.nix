@@ -1,9 +1,7 @@
 { nixpkgs ? import (builtins.fetchGit {
-  name = "nixpkgs-unstable-2022-04-30";
   url = "https://github.com/nixos/nixpkgs/";
-  ref = "refs/heads/nixos-22.05-small";
-  rev = "7ae60dd7068478db5d936a3850b6df859aec21d0";
-}) {}, compiler ? "ghc8107", doBenchmark ? false }:
+  ref = "refs/heads/nixos-22.11-small";
+}) {}, compiler ? "default", doBenchmark ? false }:
 
 let
 

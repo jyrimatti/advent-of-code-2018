@@ -2,23 +2,23 @@
 module Day17 where
 
 import           Control.Applicative (liftA2)
-import           Control.Applicative.Combinators (count, between, sepBy, optional)
+import           Control.Applicative.Combinators (sepBy, optional, (<|>))
 import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import           Data.Bifunctor (first, second, bimap)
-import           Data.Foldable (toList)
-import           Data.FoldApp (allOf, foldOf)
-import           Data.List (concatMap, find, nub, sortOn)
-import           Data.Maybe (fromJust, isJust, isNothing)
+import           Data.Composition ((.*))
+import           Data.Bifunctor (first, second)
+import           Data.Foldable (toList, find)
+import           Data.FoldApp (allOf)
+import           Data.List (concatMap, sortOn, singleton)
+import           Data.Maybe (fromJust, isNothing)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq, (<|), (|>))
-import           Data.Tuple.Extra (both, fst3, snd3, thd3)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
-import           Util ((<$$$>>), (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, arg31, arg32, arg33, singleton, (<&), (&>))
-import           Data.Composition ((.*))
+import           Data.Tuple.Extra (fst3, snd3, thd3)
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char, string)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
+import           Util ((<$$$>>), (<$$>>), (<$$>>>), (<&>>), (<*<), arg2, arg31, arg32, arg33, (<&), (&>))
 
 
 input :: IO [String]

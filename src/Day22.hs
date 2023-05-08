@@ -4,16 +4,16 @@ import           Algorithm.Search (dijkstra)
 import           Control.Applicative (liftA2)
 import           Control.Conditional (if')
 import           Data.Bifunctor (first, second)
+import           Data.Foldable (length)
 import           Data.FoldApp (allOf, listOf)
+import           Data.Function (on)
 import           Data.Maybe (fromJust)
-import           Data.Sequence (Seq, adjust', index, length, replicate, take, update)
-import           Data.Tuple.Extra (both)
-import           Prelude hiding (head, length, replicate, take, (!!))
-import           Universum.VarArg ((...))
+import           Data.Sequence (Seq, adjust', index, replicate, take, update)
+import           Universum ((...))
 import           Util ((<$$$>>), (<$$$>>>), (<$$>>), (<$$>>>), (<$$>>>>), (<&>>)
                      , (<*<), arg2, arg31, arg32, arg33, compose3, const2
                      , const3, flip2, (<&), (&>))
-import           Universum (on)
+import           Prelude hiding (replicate, take, (!!))
 
 
 depth :: Int
@@ -29,13 +29,13 @@ target = (14,709)
 (!!) = flip . uncurry $ flip index &> (.) <& flip index
 
 geoindex :: RiskLevels -> Coordinate -> Int
-geoindex = if' <$$>>> (== (0,0)) ... arg2
+geoindex = if' <$$>>> (== (0,0))     ... arg2
                   <*< const2 0 $
-           if' <$$>>> (== target) ... arg2
+           if' <$$>>> (== target)    ... arg2
                   <*< const2 0 $
-           if' <$$>>> (== 0) . snd ... arg2
+           if' <$$>>> (== 0)   . snd ... arg2
                   <*< (*16807) . fst ... arg2 $
-           if' <$$>>> (== 0) . fst ... arg2
+           if' <$$>>> (== 0)   . fst ... arg2
                   <*< (*48271) . snd ... arg2
                   <*< ( (*) <$$>> id &> (!!) <& first pred
                               <*< id &> (!!) <& second pred)

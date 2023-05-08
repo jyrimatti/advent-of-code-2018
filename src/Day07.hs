@@ -2,18 +2,16 @@
 {-# LANGUAGE TupleSections    #-}
 module Day07 where
 
-import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import           Data.List (delete, find, iterate', nub, sort)
-import           Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
-import           Data.Tuple.Extra (fst3, snd3, thd3, both)
-import           Numeric.Natural ()
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Data.Foldable (find)
+import           Data.List (iterate', sort)
+import           Data.List.Extra (nubOrd)
+import           Data.Maybe (fromJust, isJust)
+import           Data.Tuple.Extra (fst3, snd3, thd3)
+import           Text.Megaparsec (Parsec, anySingle, parseMaybe)
+import           Text.Megaparsec.Char (string)
+import           Universum ((...))
 import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, const2, (<&), (&>))
-
 
 
 input :: IO [String]
@@ -43,7 +41,7 @@ foo :: [Rule] -> [Char] -> [Char]
 foo = fstOfJusted &> (<>) <& sort
 
 nextToSolve :: [Rule] -> [Char]
-nextToSolve = nub ... foo <$> id <*> findInitials
+nextToSolve = nubOrd ... foo <$> id <*> findInitials
 
 delay :: Char -> Int
 delay = (+ 59) . length . enumFromTo 'A'
@@ -79,7 +77,7 @@ complete :: String -> [Rule] -> String
 --complete s rs = s <> (nub . fmap fst3 . filter isComplete) rs
 --complete = (. nub . fmap fst3 . filter isComplete) . (<>)
 --complete = (<>) <&>> id <*< nub . fmap fst3 . filter isComplete
-complete = id &> (<>) <& nub . fmap fst3 . filter isComplete
+complete = id &> (<>) <& nubOrd . fmap fst3 . filter isComplete
 
 concatFirsTwo :: (b, b, c) -> [b]
 concatFirsTwo = (<>) <$> pure . fst3 <*> pure . snd3
@@ -105,7 +103,7 @@ findFinals :: [Rule] -> [Char]
 findFinals = deleteAll <$> fmap fst3 <*> fmap snd3
 
 finalElement :: [Rule] -> [Rule]
-finalElement = fmap (,'_',Nothing) . nub . findFinals
+finalElement = fmap (,'_',Nothing) . nubOrd . findFinals
 
 withFinalElement :: [Rule] -> [Rule]
 withFinalElement = (<>) <$> id <*> finalElement

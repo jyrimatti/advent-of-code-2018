@@ -2,8 +2,8 @@
 module Day18 where
 
 import           Control.Applicative (liftA2)
-import           Control.Arrow ((&&&))
-import           Control.Conditional (if', ToBool)
+import           Control.Conditional (if')
+import           Data.Composition ((.*))
 import           Data.Bifunctor (bimap)
 import           Data.FoldApp (allOf)
 import           Data.List (iterate')
@@ -12,12 +12,11 @@ import           Data.Matrix.Unboxed (Matrix, (!))
 import qualified Data.Set as S
 import           Data.Tuple.Extra (both, fst3, snd3, thd3)
 import qualified Data.Vector.Unboxed as V
-import           Universum.VarArg ((...))
+import           Universum ((...))
 import           Util ((<$$$$$>>), (<$$$$$>>>), (<$$$>>), (<$$$>>>), (<$$>>)
                      , (<$$>>>), (<$$>>>>), (<$$>>>>>), (<&>>), (<*<), arg2
                      , arg31, arg32, arg33, arg51, arg52, arg54, arg55, const2
                      , (<&), (&>))
-import           Data.Composition ((.*), (.**))
 
 
 input :: IO [String]

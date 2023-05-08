@@ -2,16 +2,11 @@
 module Util where
 
 import Data.FoldApp (FoldrApp, foldrApp)
-import Data.Function                  ( on, (&) )
-import Data.Profunctor   (Profunctor, dimap)
-import Universum.VarArg ((...))
+import Universum ((...))
 import Control.Arrow ( (<<<), (>>>) )
-import Control.Category (Category)
+
 
 -- some additions:
-
-singleton :: a -> [a]
-singleton = (: [])
 
 triple :: a -> (a, a, a)
 triple = (,,) <$> id <*> id <*> id

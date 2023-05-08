@@ -4,10 +4,12 @@ module Day05 where
 import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
 import           Data.Char (isUpper, toLower, toUpper)
-import           Data.List (find, iterate', nub)
-import           Data.Maybe (fromJust, fromMaybe)
-import           Universum.VarArg ((...))
-import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, singleton, (&>), (<&))
+import           Data.Foldable (find)
+import           Data.List (iterate', singleton)
+import           Data.List.Extra (nubOrd)
+import           Data.Maybe (fromJust)
+import           Universum ((...))
+import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, (&>), (<&))
 
 
 input :: IO String
@@ -32,6 +34,7 @@ react = if' <$$>>> (== []) . snd ... arg2
         if' <$$>>> toggleCase &> (==) <& head . snd
                <*< (Reacted,) . tail . snd ... arg2 $
                    (,) <$$>> fst ... arg2 <*< (id &> (:) <& snd)
+-- pattern-matching is awesome, and there's no point trying to force it point-free.
 
 act :: (a, String) -> (Reaction, String)
 act = foldr react (Stable,[]) . snd
@@ -52,7 +55,7 @@ removeProblematic :: String -> String -> [String]
 removeProblematic = fmap . (id &> flip filter <& (. toLower) . (/=))
 
 solve2 :: String -> Int
-solve2 = minimum . fmap solve1 . (removeProblematic <$> id <*> nub . fmap toLower)
+solve2 = minimum . fmap solve1 . (removeProblematic <$> id <*> nubOrd . fmap toLower)
 
 -- What is the length of the shortest polymer you can produce
 solution2 :: IO Int

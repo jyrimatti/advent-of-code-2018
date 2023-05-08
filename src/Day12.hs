@@ -1,20 +1,24 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Day12 where
 
+import           GHC.Generics (Generic)
+import           Control.Applicative.Combinators (many, (<|>))
 import           Control.Conditional (if')
-import           Control.Lens (set, makeLenses)
+import           Control.Lens (set)
 import           Data.Foldable (toList)
 import           Data.FoldApp (listOf)
+import           Data.Generics.Product (field)
 import           Data.List (iterate')
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq((:<|), (:|>)), (<|), (|>))
 import           Data.Tuple.Extra (both)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char, string)
+import           Universum ((...))
 import           Util ((<$$>>), (<$$>>>), (<$$>>>>>>), (<&>>), (<*<), arg2, arg1, (&>), (<&))
 
 
@@ -24,11 +28,9 @@ input = lines <$> readFile "input/input12.txt"
 type State = Char
 
 data Pot = Pot {
-    _num   :: Int,
-    _state :: State
-} deriving (Show, Eq)
-
-makeLenses ''Pot
+    num   :: Int,
+    state :: State
+} deriving (Show, Eq, Generic)
 
 type Parser = Parsec () String
 
@@ -57,16 +59,16 @@ note :: String -> Note
 note = fromJust . parseMaybe noteP
 
 valueOfFirst :: Seq Pot -> Int
-valueOfFirst = _num . fromJust . S.lookup 0
+valueOfFirst = num . fromJust . S.lookup 0
 
 valueOfLast :: Seq Pot -> Int
-valueOfLast = _num . fromJust . (S.lookup <$> pred . length <*> id)
+valueOfLast = num . fromJust . (S.lookup <$> pred . length <*> id)
 
 firstStates :: Int -> Seq Pot -> [State]
-firstStates = fmap _state . toList ... S.take
+firstStates = fmap state . toList ... S.take
 
 lastStates :: Int -> Seq Pot -> [State]
-lastStates = fmap _state . toList ... (S.drop <$$>> ((-) <$$>> S.length ... arg2 <*< arg1) <*< arg2)
+lastStates = fmap state . toList ... (S.drop <$$>> ((-) <$$>> S.length ... arg2 <*< arg1) <*< arg2)
 
 extendLeft :: Seq Pot -> Seq Pot
 --extendLeft pots@(Pot _ '.' :<| Pot _ '.' :<| Pot _ '.' :<| Pot _ '.' :<| ps)  = extendLeft ps
@@ -114,12 +116,12 @@ transform pots index notes = let
 transform = if' <$$>>> ( (||) <$$>> (<= 1) ... arg2
                                 <*< subtract 2 . length &> (<=) <& id )
                    <*< const ... lookupOffset id
-                   <*< (flip . flip (set state ... findTarget) ... mkList5 <$$>>>>>> -- oh god...
-                                   _state ... lookupOffset (pred . pred)
-                               <*< _state ... lookupOffset pred
-                               <*< _state ... lookupOffset id
-                               <*< _state ... lookupOffset succ
-                               <*< _state ... lookupOffset (succ . succ)
+                   <*< (flip . flip (set (field @"state") ... findTarget) ... mkList5 <$$>>>>>> -- oh god...
+                                   state ... lookupOffset (pred . pred)
+                               <*< state ... lookupOffset pred
+                               <*< state ... lookupOffset id
+                               <*< state ... lookupOffset succ
+                               <*< state ... lookupOffset (succ . succ)
                                <*< lookupOffset id)
 
 mapToIndex :: Seq a -> Seq Int
@@ -130,20 +132,20 @@ transformAll :: M.Map [State] Char -> Seq Pot -> Seq Pot
 transformAll = fmap <$$>> flip (flip . transform . extend) <*< mapToIndex . extend ... arg2 -- aargh...
 
 calculateSum :: Seq Pot -> Int
-calculateSum = sum  . fmap _num . S.filter ((== '#') . _state)
+calculateSum = sum  . fmap num . S.filter ((== '#') . state)
 
 pairWithNext :: [a] -> [(a, a)]
 pairWithNext = zip <$> id <*> tail
 
 takeUntilDuplicate :: [Seq Pot] -> [Seq Pot]
-takeUntilDuplicate = fmap snd . takeWhile (uncurry (/=) . both (fmap _state)) . pairWithNext
+takeUntilDuplicate = fmap snd . takeWhile (uncurry (/=) . both (fmap state)) . pairWithNext
 
 remainingGenerations :: Int -> [Seq Pot] -> Int
 --remainingGenerations = (-) <&>> id <*< length
 remainingGenerations = id &> (-) <& length
 
 occupiedPots :: Seq Pot -> Seq Pot
-occupiedPots = S.filter ((== '#') . _state)
+occupiedPots = S.filter ((== '#') . state)
 
 amountToAddToMissingGenerations :: [Seq Pot] -> Int
 amountToAddToMissingGenerations = length . occupiedPots . last

@@ -4,31 +4,27 @@
 {-# LANGUAGE TupleSections         #-}
 module Day19 where
 
-import           Control.Applicative.Combinators (count, between, sepBy, optional)
-import           Control.Arrow (second, (&&&))
+import           Control.Applicative.Combinators (many)
+import           Control.Arrow ((&&&))
 import           Control.Conditional (if', bool)
 import           Data.Bifunctor (bimap)
 import           Data.Bits ((.&.), (.|.))
-import           Data.Function (on)
-import           Data.List (iterate', nub, nubBy, sortOn)
-import           Data.List.Split (chunksOf)
-import           Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
-import           Data.Ord (comparing)
+import           Data.Composition ((.*))
+import           Data.List (iterate', singleton)
+import           Data.Maybe (fromJust)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
-import           Data.Tuple.Extra (uncurry3)
 import qualified Data.Vector.Unboxed as V
 import           Data.Vector.Unboxed (Vector)
 import           Numeric.Natural (Natural)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char, letterChar, string)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
 import           Util ((<$$$$>>), (<$$$$>>>), (<$$>>), (<&>>), (<*<), arg2
-                     , arg41, arg42, arg43, arg44, singleton, uncurry4, (<&>>>>)
+                     , arg41, arg42, arg43, arg44, uncurry4, (<&>>>>)
                      , (<&), (&>), arg51, arg52, arg53, arg54, arg55, (<$$$$$>>)
                      , (<$$>>>>>), arg1, (<$$$$$>>>))
-import           Data.Composition ((.*))
 
 
 input :: IO [String]

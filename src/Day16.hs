@@ -2,33 +2,32 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE InstanceSigs #-}
 module Day16 where
 
 import           Control.Applicative (liftA2)
-import           Control.Applicative.Combinators (count, between, sepBy)
-import           Control.Arrow ((&&&))
+import           Control.Applicative.Combinators (between, sepBy)
 import           Control.Conditional (if', bool)
+import           Data.Composition ((.**), (.*))
 import           Data.Bifunctor (bimap)
 import           Data.Bits ((.&.), (.|.))
-import           Data.Function (on)
-import           Data.List (iterate', nub, nubBy, sortOn)
+import           Data.List (iterate', sortOn)
+import           Data.List.Extra (nubOrd)
 import           Data.List.Split (chunksOf)
-import           Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
-import           Data.Ord (comparing)
+import           Data.Maybe (catMaybes, fromJust)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import           Data.Tuple.Extra (uncurry3)
 import           Numeric.Natural (Natural)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char, string)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
 import           Util ((<$$$$>>), (<$$$$>>>), (<$$$$>>>>), (<$$>>), (<$$>>>)
                      , (<&>>), (<*<), arg41, arg42, arg43, arg44, const4, fst4
                      , fth4, snd4, thd4, uncurry4, (<&), (&>), (<&>>>>), arg1
                      , arg2, (<$$$$$>>>), arg51, arg55, arg53, arg52, arg54
                      , (<$$$$$>>), const2, const5, (<$$>>>>>))
-import           Data.Composition ((.**), (.*), (.***))
 
 
 input :: IO [String]
@@ -69,6 +68,7 @@ newtype Register = Register { value :: Integer}
     deriving Eq
 
 instance Show Register where
+    show :: Register -> String
     show = show . value
 
 type Registers = Seq Register
@@ -226,7 +226,7 @@ baz = (<$> opcodes) .** (if' <$$$$>>> matches
                                   <*< const4 Nothing)
 
 opcodeCandidates :: [String] -> [[(Int, Opcode)]]
-opcodeCandidates = nub . sortOn length . fmap (catMaybes . uncurry3 baz) . parseData
+opcodeCandidates = nubOrd . sortOn length . fmap (catMaybes . uncurry3 baz) . parseData
 
 quux :: (Eq a, Eq b) => a -> b -> [(a, b)] -> [(a, b)]
 quux = (. fst) . (/=) &> filter .* liftA2 (&&) <& (. snd) . (/=)

@@ -1,7 +1,8 @@
 module Main where
 
+import           Control.Conditional (whenM)
 import           Data.Time (getCurrentTime)
-
+import           System.Environment (getArgs)
 import qualified Day01
 import qualified Day02
 import qualified Day03
@@ -27,9 +28,6 @@ import qualified Day22
 import qualified Day23
 import qualified Day24
 import qualified Day25
-import System.Environment (getArgs)
-import Control.Monad (when, guard)
-import Control.Conditional (whenM)
 
 
 day :: [Char] -> IO () -> IO ()

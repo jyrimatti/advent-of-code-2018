@@ -1,27 +1,27 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 module Day14 where
 
+import           GHC.Generics (Generic)
 import           Control.Conditional (if')
-import           Control.Lens (over, makeLenses)
-import           Data.Foldable (toList)
-import           Data.List (isPrefixOf, isSuffixOf, iterate', tails)
+import           Control.Lens (over)
+import           Data.Generics.Product (field)
+import           Data.List (iterate', singleton)
 import           Data.Maybe (fromJust, maybeToList)
 import qualified Data.Sequence as S
 import           Data.Sequence ((><), (|>))
 import           Data.Tuple.Extra (both)
-import           Prelude hiding (last, init, (++))
-import           Universum.VarArg ((...))
-import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, compose3, const2, singleton, (<&), (&>))
+import           Universum ((...))
+import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, compose3, const2, (<&), (&>))
 
 
 input :: Int
 input = 607331
 
 newtype Elf = Elf {
-    _current :: Int
-} deriving Show
-
-makeLenses  ''Elf
+    current :: Int
+} deriving (Show, Generic)
 
 type Recipies = S.Seq Int
 
@@ -39,12 +39,12 @@ toDigits = fmap (read . singleton) . show
 
 newRecipies :: Recipies -> (Elf,Elf) -> [Int]
 --newRecipies recipies (Elf current1,Elf current2) = toDigits ((recipies ! current1) + (recipies ! current2))
-newRecipies = toDigits ... (+) <$$>> id &> (!) <& _current . fst
-                                 <*< id &> (!) <& _current . snd
+newRecipies = toDigits ... (+) <$$>> id &> (!) <& current . fst
+                                 <*< id &> (!) <& current . snd
 
 updateRecipie :: Recipies -> Elf -> Elf
 --updateRecipie recipies elf@(Elf current) = elf { _current = (current + (recipies ! current) + 1) `mod` length recipies }
-updateRecipie = modifier &> over current <& id
+updateRecipie = modifier &> over (field @"current") <& id
 
 modifier :: Recipies -> Int -> Int
 modifier = mod <$$>> succ ... ((+) <$$>> arg2 <*< (!))
@@ -60,17 +60,17 @@ step :: Recipies -> (Elf,Elf) -> (Recipies,(Elf,Elf))
 step = ((,) <$$>> const <*< (updateRecipie &> both <& id)) <$$>> updatedRecipies <*< arg2
 
 -- last element of a Seq without pattern matching
-last :: S.Seq a -> a
-last = fromJust ... S.lookup <$> pred . length <*> id
+seqLast :: S.Seq a -> a
+seqLast = fromJust ... S.lookup <$> pred . length <*> id
 
 -- init of a Seq without pattern matching
-init :: S.Seq a -> S.Seq a
-init = fromJust ... S.lookup <$> pred . length <*> S.inits
+seqInit :: S.Seq a -> S.Seq a
+seqInit = fromJust ... S.lookup <$> pred . length <*> S.inits
 
 foo2 :: Int -> S.Seq Int -> [Int]
 foo2 = if' <$$>>> null ... arg2
               <*< const2 []
-              <*< ((:) <$$>> last ... arg2 <*< pred &> lastnReversed <& init)
+              <*< ((:) <$$>> seqLast ... arg2 <*< pred &> lastnReversed <& seqInit)
 
 lastnReversed :: Int -> Recipies -> [Int]
 lastnReversed = if' <$$>>> (== 0) ... const

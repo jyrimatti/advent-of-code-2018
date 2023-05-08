@@ -1,21 +1,17 @@
 module Day01 where
 
-import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import           Control.Monad (when)
-import           Data.Either (fromLeft, isRight)
-import           Data.List (find)
-import           Data.Maybe (catMaybes, fromJust, isJust, isNothing, mapMaybe)
-import           Data.Set (Set, elemAt, empty, insert, lookupIndex, member)
+import           Data.Maybe (mapMaybe)
+import           Data.Set (Set, empty, insert)
 import           Universum ((...))
 import           Util (const2, (<$$>>), (<$$>>>), (<*<))
-
 
 
 type Elem = Int
 
 input :: IO [Elem]
 input = fmap parseElem . lines <$> readFile "input/input01.txt"
+-- same as: fmap (fmap parseElem . lines) $ readFile "input/input01.txt"
 
 parseElem :: String -> Elem
 parseElem = read . filter (/= '+')
@@ -27,7 +23,7 @@ solution1 = sum <$> input
 
 
 findElem :: Elem -> Set Elem -> Maybe Elem
-findElem = if' <$$>>> member
+findElem = if' <$$>>> elem
                   <*< Just ... const
                   <*< const2 Nothing
 

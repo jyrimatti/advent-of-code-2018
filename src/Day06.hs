@@ -1,19 +1,17 @@
 module Day06 where
 
 import           Control.Applicative (liftA2)
-import           Control.Arrow ((&&&))
-import           Data.Bifunctor (bimap)
+import           Data.Bifunctor (first)
 import           Data.Function (on)
-import           Data.List (find, group, maximumBy, minimumBy, nub, null, sort)
+import           Data.List (group, sort)
 import           Data.List.Extra (minimumOn)
 import           Data.Maybe (fromJust)
-import           Data.Tuple.Extra (both, first, second)
-import           Text.Megaparsec (Parsec, anySingleBut, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Data.Tuple.Extra (both)
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (string)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
 import           Util ((<$$$$>>), (<$$$$>>>>), (<$$>>), (<$$>>>), (<*<), anyOf, arg41, arg42, arg43, arg44, (<&>>), (&>), (<&))
-import           Day07 (foo)
 
 
 input :: IO [String]

@@ -3,36 +3,32 @@
 {-# LANGUAGE TypeApplications #-}
 module Day20 where
 
-import           Algorithm.Search (aStar, bfs)
-import           Control.Applicative (liftA3, many)
-import           Control.Arrow (second, (&&&))
+import           Algorithm.Search (aStar)
+import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
-import           Control.Monad.Combinators (between, sepBy)
+import           Control.Applicative.Combinators (between, sepBy, many, (<|>))
 import           Data.Bifunctor (bimap)
+import           Data.Composition ((.***), (.*), (.**))
 import           Data.Foldable (toList)
 import           Data.FoldApp (allOf, sumOf)
-import           Data.List (intercalate, intersperse, iterate', maximumBy)
+import           Data.Function (on)
+import           Data.List (iterate')
 import qualified Data.Matrix as M
 import           Data.Matrix.Unboxed (Matrix, cols, rows, (!), toLists, toRows, fromLists)
-import           Data.Maybe (catMaybes, fromJust)
-import           Data.Ord (comparing)
+import           Data.Maybe (fromJust)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq, (<|), (><), (|>))
 import           Data.Tuple.Extra (both, fst3, thd3, uncurry3)
 import qualified Data.Vector.Unboxed as V
-import           Data.Zip (zipWith, zipWith3)
-import           Prelude hiding (zipWith, zipWith3)
-import           Text.Megaparsec (Parsec, anySingle, optional, parse, try, (<|>))
-import           Text.Megaparsec.Char (char, space, string)
-import           Universum.VarArg ((...))
+import           Text.Megaparsec (Parsec, parse, try)
+import           Text.Megaparsec.Char (char, string)
+import           Universum ((...))
 import           Util ((<$$$$$>>), (<$$$$$>>>), (<$$$$>>), (<$$$$>>>)
                      , (<$$$$>>>>), (<$$$>>), (<$$$>>>), (<$$$>>>>), (<$$$>>>>>)
                      , (<$$>>), (<$$>>>), (<$$>>>>), (<&>>), (<*<), arg2, arg31
                      , arg32, arg33, arg41, arg42, arg43, arg44, arg51, arg52
                      , arg53, arg54, arg55, compose3, compose4, const2, const4
                      , const5, (<&), (&>))
-import           Data.Composition ((.***), (.*))
-import           Universum (on)
 
 
 input, test1, test2, test3 :: IO String
@@ -146,7 +142,7 @@ extend = if' <$$>>> (== Empty) ... const
                 <*< (,) ... arg2 $
          if' <$$>>> isBr ... const
                 <*< ((.) <$$>> (Br . tail . branches &> extend <& id)
-                           <*< thd3 . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) ... (head . branches &> (,,) <& id) )
+                           <*< thd3 . head . dropWhile (not . null . fst3) . iterate' (uncurry3 extendBranch) .** (head . branches &> (,,) <& id) )
                 <*< ((compose4 <$$$$>>>> ((,) ... (,) <$$$$>> ((+) <$$$$>> arg41 <*< (*2) ... arg43)
                                                           <*< ((+) <$$$$>> arg42 <*< (*2) ... arg44))
                                      <*< door
@@ -179,7 +175,7 @@ inside = allOf <$$$>>>> (>=0) ... xdx
                     <*< ((<) <$$$>> ydy <*< cols ... arg32)
 
 isDoor :: (Int, Int) -> Map -> (Int, Int) -> Bool
-isDoor = (`elem` ['-','|']) ... ( (... (,)) . (!) <$$$>>> arg32
+isDoor = (`elem` ['-','|']) ... ( (.* (,)) . (!) <$$$>>> arg32
                                                       <*< xdx
                                                       <*< ydy)
 

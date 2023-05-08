@@ -1,29 +1,27 @@
 module Day23 where
 
 import           Control.Applicative (liftA2, liftA3)
-import           Control.Arrow (first, second, (&&&))
-import           Control.Monad.Combinators (between, sepBy)
-import           Data.Foldable (minimumBy)
-import           Data.FoldApp (allOf, sumOf, listOf, foldOf)
+import           Control.Applicative.Combinators (sepBy)
+import           Control.Arrow (first, (&&&))
+import           Data.Composition ((.*))
+import           Data.FoldApp (allOf, sumOf, listOf)
 import           Data.Function (on)
-import           Data.List (groupBy, maximumBy, nub, permutations, sort, sortOn)
-import           Data.List.Extra (groupOn)
-import           Data.Maybe (catMaybes, fromJust)
+import           Data.List (sortOn, singleton)
+import           Data.List.Extra (groupOn, nubOrd, maximumOn)
+import           Data.Maybe (fromJust)
 import           Data.Monoid (Endo(Endo, appEndo))
-import           Data.Ord (Down(..), Ord(..), comparing)
+import           Data.Ord (Down(..), Ord(..))
 import qualified Data.Set as S
 import           Data.Tuple.Extra (swap, both, fst3, snd3, thd3, uncurry3)
-import           Text.Megaparsec (Parsec, optional, parse, parseMaybe, try, (<|>))
+import           Text.Megaparsec (Parsec, parseMaybe)
 import           Text.Megaparsec.Char (char, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Universum ((...))
 import           Util ((<$$$>>), (<$$$>>>), (<$$>>), (<$$>>>), (<$$>>>>>>)
                      , (<&>>), (<&>>>), (<*<), anyOf, arg2, arg31, arg32, arg33
-                     , both3, onn, singleton, triple, (<&), (&>), (<$$$$>>)
+                     , both3, onn, triple, (<&), (&>), (<$$$$>>)
                      , arg41, arg43, arg44, arg42, (<$$>>>>), arg1, (<$$$$>>>)
                      , const4)
-import           Data.Composition ((.*), (.**), (.***), (.****))
-
 
 
 input, test2, test3 :: IO [String]
@@ -42,7 +40,8 @@ data Nanobot = Nanobot {
 type Parser = Parsec () String
 
 nanobotP :: Parser Nanobot
-nanobotP = Nanobot <$> (((,,) <$> head <*> head . tail <*> head . tail . tail) <$> (string "pos=<" *> signed space decimal `sepBy` char ',')) <*> (string ">, r=" *> decimal)
+nanobotP = Nanobot <$> (((,,) <$> head <*> head . tail <*> head . tail . tail) <$> (string "pos=<" *> signed space decimal `sepBy` char ','))
+                   <*> (string ">, r=" *> decimal)
 
 nanobot :: String -> Nanobot
 nanobot = fromJust ... parseMaybe nanobotP
@@ -53,7 +52,7 @@ manhattan = (sumOf `onn` abs) <$$>>> ((-) `on` fst3)
                                  <*< ((-) `on` thd3)
 
 solve1 :: [String] -> Int
-solve1 = length . (filter <$> (>=) . radius . fst <*> uncurry fmap . first (manhattan . pos)) . (maximumBy (comparing radius) &&& fmap pos) . fmap nanobot
+solve1 = length . (filter <$> (>=) . radius . fst <*> uncurry fmap . first (manhattan . pos)) . (maximumOn radius &&& fmap pos) . fmap nanobot
 
 -- How many nanobots are in range
 solution1 :: IO Int
@@ -84,11 +83,11 @@ coords2 = filter .* flip (.) <$$>>> manhattan . pos ... arg2
                                                     <*< (limitedRange <$$>>> snd3 . pos ... arg2 <*< snd3 ... const <*< radius ... arg2)
                                                     <*< (limitedRange <$$>>> thd3 . pos ... arg2 <*< thd3 ... const <*< radius ... arg2))
 
-minimumsBy :: (Eq a, Ord b) => (a -> b) -> [a] -> [a]
-minimumsBy = nub . head ... (.) <$> groupOn <*> sortOn
+minimumsBy :: (Ord a, Ord b) => (a -> b) -> [a] -> [a]
+minimumsBy = nubOrd . head ... (.) <$> groupOn <*> sortOn
 
-maximumsBy :: (Eq a, Ord b) => (a -> b) -> [a] -> [a]
-maximumsBy = nub . head ... (.) <$> groupOn <*> sortOn . (Down .)
+maximumsBy :: (Ord a, Ord b) => (a -> b) -> [a] -> [a]
+maximumsBy = nubOrd . head ... (.) <$> groupOn <*> sortOn . (Down .)
 
 botsInRange :: (a, b) -> b
 botsInRange = snd
@@ -103,13 +102,13 @@ process :: ([Nanobot] -> [Coord]) -> Int -> [String] -> [(Coord, Int)]
 process = (.) <&>> maximumsBy botsInRange ... baz <*< fmap . (. nanobot) . roundBot
 
 start :: Int -> [String] -> [(Coord, Int)]
-start = process (nub . concatMap coords)
+start = process (nubOrd . concatMap coords)
 
 nearestToOrigin :: [(Coord, Int)] -> [(Coord, Int)]
-nearestToOrigin = nub . concat . take 2 . groupOn distanceToOrigin . sortOn distanceToOrigin
+nearestToOrigin = nubOrd . concat . take 2 . groupOn distanceToOrigin . sortOn distanceToOrigin
 
 cont :: Coord -> Int -> [String] -> [(Coord, Int)]
-cont = nearestToOrigin ... process . (nub ... concatMap . coords2)
+cont = nearestToOrigin ... process . (nubOrd ... concatMap . coords2)
 
 inRange :: Coord -> Nanobot -> Bool
 inRange = (<=) <$$>> (. pos) . manhattan <*< const radius
@@ -160,13 +159,13 @@ inRangeOfBots2 :: (Coord,Coord) -> [Nanobot] -> ((Coord,Coord),Int)
 inRangeOfBots2 = (.) <$> (,) <*> length ... filter . ((||) <$$>> inside <*< inRangeOf)
 
 getCorners :: Int -> [Nanobot] -> [(Int, Int, Int)]
-getCorners = nub ... fmap . (. pos) . both3 . flip div . (^2)
+getCorners = nubOrd ... fmap . (. pos) . both3 . flip div . (^2)
 
 limits :: [Coord] -> (Int, Int)
 limits = (minimum &&& maximum) . concatMap (uncurry3 $ listOf <&>>> id <*< id <*< id)
 
 boxify :: Int -> Coord -> Coord -> [(Coord,Coord)]
-boxify = (...) <$$$>> nub ... fmap . (id &&&) . (both3 . (+)) ... arg31 <*< booox
+boxify = (...) <$$$>> nubOrd ... fmap . (id &&&) . (both3 . (+)) ... arg31 <*< booox
 
 booox :: Int -> Coord -> Coord -> [Coord]
 booox = liftA3 (,,) <$$$>>> (enumFromThenTo <$$$>>> fst3 ... arg32 <*< ((+) <$$$>> arg31 <*< fst3 ... arg32) <*< pred . fst3 ... arg33)

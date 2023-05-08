@@ -3,16 +3,10 @@ module Day11 where
 import           Control.Applicative (liftA2)
 import           Control.Arrow ((&&&))
 import           Data.FoldApp (allOf)
-import           Data.Function (on)
-import           Data.List (find, maximumBy, sortBy)
 import           Data.List.Extra (maximumOn)
 import qualified Data.Map.Strict as M
-import           Data.Maybe (fromJust)
-import           Data.Tuple.Extra (both)
-import           Prelude hiding (subtract)
-import           Universum.VarArg ((...))
+import           Universum ((...))
 import           Util ((<$$$>>>), (<$$>>), (<$$>>>), (<$$>>>>), (<&>>), (<*<), arg2, arg31, arg33, (<$$$>>), const2, argDrop3, argDrop1, (<&), (&>))
-import           Universum (subtract)
 
 
 type Coordinate = (Int,Int)

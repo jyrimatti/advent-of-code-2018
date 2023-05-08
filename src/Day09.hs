@@ -1,19 +1,19 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Day09 where
 
-import           Control.Applicative.Combinators (count)
-import           Control.Arrow ((&&&))
+import           GHC.Generics (Generic)
 import           Control.Conditional (if')
-import           Control.Lens (over, set, makeLenses)
+import           Control.Lens (over, set)
+import           Data.Generics.Product (getField, field)
 import           Data.List (iterate')
 import           Data.Maybe (fromJust)
 import qualified Data.Sequence as S
-import           Data.Tuple.Extra (uncurry3)
-import           Prelude hiding (round)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (string)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
 import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, (<$$$>>), (<$$$>>>))
 
 
@@ -21,18 +21,16 @@ input :: IO String
 input = readFile "input/input09.txt"
 
 data Game = Game {
-    _round   :: Int,
-    _index   :: Int,
-    _player  :: Int,
-    _marbles :: S.Seq Int,
+    currentRound :: Int,
+    index        :: Int,
+    player       :: Int,
+    marbles      :: S.Seq Int,
     
-    _scores  :: S.Seq Int,
+    scores       :: S.Seq Int,
 
-    _players :: Int,
-    _rounds  :: Int
-} deriving Show
-
-makeLenses ''Game
+    players      :: Int,
+    rounds       :: Int
+} deriving (Show, Generic)
 
 gameP :: Parser Game
 gameP = (Game 0 0 0 S.empty <$$>>> (`S.replicate` 0) ... const) <*< const <*< arg2 <$> (decimal <* string " players; last marble is worth ")
@@ -54,30 +52,30 @@ newIndex (Game _ _ marbles round index _ _) | isSpecial round               = (S
 newIndex (Game _ _ marbles _     index _ _) | index == S.length marbles - 2 = S.length marbles
 newIndex (Game _ _ marbles _     index _ _)                                 = (index + 2) `rem` S.length marbles
 -}
-newIndex = if' <$> S.null . _marbles
+newIndex = if' <$> S.null . marbles
                <*> const 0 <*> (
-           if' <$> (== 1) . S.length . _marbles
+           if' <$> (== 1) . S.length . marbles
                <*> const 1 <*> (
-           if' <$> isSpecial . _round
-               <*> (rem <$> ((+) <$> S.length . _marbles <*> subtract 7 . _index) <*> S.length . _marbles) <*> (
-           if' <$> ( (==) <$> _index <*> subtract 2 . S.length . _marbles)
-               <*> S.length . _marbles
-               <*> (rem <$> (+2) . _index <*> S.length . _marbles))))
+           if' <$> isSpecial . currentRound
+               <*> (rem <$> ((+) <$> S.length . marbles <*> subtract 7 . index) <*> S.length . marbles) <*> (
+           if' <$> ( (==) <$> index <*> subtract 2 . S.length . marbles)
+               <*> S.length . marbles
+               <*> (rem <$> (+2) . index <*> S.length . marbles))))
 
 getScore :: Game -> Int
-getScore = (+) <$> _round <*> (fromJust ... S.lookup <$> newIndex <*> _marbles)
+getScore = (+) <$> currentRound <*> (fromJust ... S.lookup <$> newIndex <*> marbles)
 
 nextPlayer :: Game -> Int
-nextPlayer = rem <$> (+1) . _player <*> _players
+nextPlayer = rem <$> (+1) . player <*> players
 
 updateCurrentPlayerScore :: Game -> S.Seq Int
-updateCurrentPlayerScore = S.adjust' <$> (+) . getScore <*> _player <*> _scores
+updateCurrentPlayerScore = S.adjust' <$> (+) . getScore <*> player <*> scores
 
 updateMarbles :: Int -> Game -> S.Seq Int
 --updateMarbles newIndex game = S.insertAt newIndex (_round game) (_marbles game)
 --updateMarbles = uncurry <&>> S.insertAt <*< (_round &&& _marbles)
-updateMarbles = S.insertAt <$$>>> const <*< _round ... arg2 
-                                        <*< _marbles ... arg2
+updateMarbles = S.insertAt <$$>>> const <*< currentRound ... arg2 
+                                        <*< marbles ... arg2
 
 step :: Game -> Game
 {-step g | isSpecial (round g) = g {
@@ -94,18 +92,18 @@ step g = g {
   player  = nextPlayer g
 }-}
 -- uuh...
-step = over round succ .
-       (set player <$> nextPlayer <*> id) .
-       (((.) <$> set index
-             <*> (if' <$$>>> isSpecial . _round ... arg2
-                         <*< ((.) <$> over marbles . S.deleteAt
-                                  <*> (set scores <$> updateCurrentPlayerScore <*> id) ... arg2 )
-                         <*< (set marbles <$$>> updateMarbles <*< arg2)
+step = over (field @"currentRound") succ .
+       (set (field @"player") <$> nextPlayer <*> id) .
+       (((.) <$> set (field @"index")
+             <*> (if' <$$>>> isSpecial . currentRound ... arg2
+                         <*< ((.) <$> over (field @"marbles") . S.deleteAt
+                                  <*> (set (field @"scores") <$> updateCurrentPlayerScore <*> id) ... arg2 )
+                         <*< (set (field @"marbles") <$$>> updateMarbles <*< arg2)
                  )
         ) <$> newIndex <*> id)
 
 solve1 :: Game -> Int
-solve1 = maximum . _scores . head . dropWhile ((<=) <$> _round <*> _rounds) . iterate' step
+solve1 = maximum . scores . head . dropWhile ((<=) <$> currentRound <*> rounds) . iterate' step
 
 -- What is the winning Elf's score?
 solution1 :: IO Int
@@ -114,5 +112,5 @@ solution1 = solve1 . game <$> input
 
 -- What would the new winning Elf's score be if the number of the last marble were 100 times larger?
 solution2 :: IO Int
-solution2 = solve1 . over rounds (*100) . game <$> input
+solution2 = solve1 . over (field @"rounds") (*100) . game <$> input
 -- 3038972494

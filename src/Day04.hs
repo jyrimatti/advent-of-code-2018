@@ -2,27 +2,24 @@
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
-module Day04 where 
-    
-import           Control.Arrow ((&&&))
+module Day04 where
+
+import           GHC.Generics (Generic)
+import           Control.Applicative.Combinators (many, (<|>))
 import           Control.Conditional (if')
-import           Control.Lens (over, makeLenses)
+import           Control.Lens (over)
+import           Data.Bifunctor (first, second)
 import           Data.Function (on)
-import           Data.Functor.Identity (Identity)
-import           Data.List (find, group, groupBy, maximumBy, nub, sort, sortOn)
-import           Data.List.Extra (groupOn, groupSortBy, groupSortOn, maximumOn)
-import           Data.Maybe (fromJust, fromMaybe, isJust)
-import           Data.Profunctor (rmap)
-import           Data.Tuple (swap)
-import           Data.Tuple.Extra (both, first, second)
-import           Text.Megaparsec (Parsec, anySingleBut, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum ((...), Generic)
-import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), const2, singleton, (<&), (&>))
 import           Data.Generics.Product (field)
-
-
+import           Data.List (group, sort, singleton)
+import           Data.List.Extra (groupSortOn, maximumOn, nubOrd)
+import           Data.Maybe (fromJust, isJust)
+import           Data.Tuple (swap)
+import           Text.Megaparsec (Parsec, anySingleBut, parseMaybe)
+import           Text.Megaparsec.Char (char, string)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
+import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), const2, (<&), (&>))
 
 
 input :: IO [String]
@@ -92,7 +89,7 @@ pairwise :: [a] -> [(a, a)]
 pairwise = zip <$> id <*> tail
 
 groupByGuardId :: [(GuardId, b)] -> (GuardId, [b])
-groupByGuardId = first (head . nub) . unzip
+groupByGuardId = first (head . nubOrd) . unzip
 
 asleepMinutesPerGuard :: [String] -> [(GuardId, [(Int, Int)])]
 asleepMinutesPerGuard = fmap groupByGuardId . groupSortOn fst . foldl (flip collectAsleepMinutes) [] . pairwise . records

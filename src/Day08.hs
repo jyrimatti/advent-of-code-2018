@@ -1,17 +1,15 @@
 module Day08 where
 
 import           Control.Applicative (liftA2)
-import           Control.Applicative.Combinators (count)
-import           Control.Category ((<<<))
+import           Control.Applicative.Combinators (count, optional)
 import           Control.Conditional (if')
-import           Control.Monad ((<=<))
+import           Data.Function (on)
 import           Data.Maybe (fromJust)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
-import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char)
+import           Text.Megaparsec.Char.Lexer (decimal)
+import           Universum ((...))
 import           Util ((<$$>>), (<&>>), (<*<), arg2, (<&), (&>))
-import           Universum (on)
 
 
 input :: IO String

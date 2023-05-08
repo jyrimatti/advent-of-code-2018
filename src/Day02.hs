@@ -1,11 +1,9 @@
 module Day02 where
 
 import           Control.Arrow ((&&&))
-import           Data.Foldable (foldMap)
-import           Data.List (find, group, intersect, nub, sort, tails)
+import           Data.List (group, intersect, sort, tails)
 import           Data.Tuple.Extra (both)
 import           Text.EditDistance (defaultEditCosts, levenshteinDistance)
-
 
 
 input :: IO [String]

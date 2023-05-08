@@ -1,34 +1,19 @@
 module Day25 where
 
-import           Algorithm.Search (bfs)
-import           Control.Arrow ((&&&))
-import           Control.Monad ((>=>))
-import           Control.Monad.Combinators (between, manyTill, sepBy)
-import           Data.Bifunctor (bimap, first, second)
-import           Data.Foldable (foldl', maximumBy, toList)
+import           Control.Applicative.Combinators (sepBy)
+import           Control.Conditional (if')
+import           Data.Foldable (foldl')
+import           Data.FoldApp (sumOf)
 import           Data.Function (on)
-import           Data.List (cycle, delete, group, groupBy, iterate', nub, nubBy, sort, sortBy, sortOn, zip, (\\))
-import           Data.List.Extra (groupSortBy)
-import qualified Data.Matrix as M
-import           Data.Matrix (Matrix, (!))
-import           Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
-import           Data.Ord (Down(..), comparing)
+import           Data.List (iterate', zip, singleton)
+import           Data.Maybe (fromJust)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq(..))
-import           Data.Tuple (swap)
-import           Data.Tuple.Extra (both, swap)
-import qualified Data.Vector as V
-import           Data.Vector (Vector)
-import           Prelude hiding (Either(Left, Right), round)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parse, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Text.Megaparsec (Parsec, parse)
+import           Text.Megaparsec.Char (char, space)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
 import           Util ((<$$>>>>), onnn, fst4, snd4, thd4, fth4, (<*<), (<$$>>), arg32, (<$$$>>>), arg33, arg31, (<&), (&>), (<$$>>>), arg2, arg1, const2)
-import           Data.FoldApp (sumOf)
 import           Universum ((...))
-import           Util (singleton)
-import           Data.Composition ((.*))
-import           Control.Conditional (if')
 
 
 inputLines :: FilePath -> IO [String]

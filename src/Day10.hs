@@ -1,20 +1,19 @@
 module Day10 where
 
-import           Control.Applicative.Combinators (count)
+import           Control.Applicative.Combinators (many)
 import           Control.Arrow ((&&&))
 import           Control.Conditional (if')
 import           Data.FoldApp (foldOf)
 import           Data.Function (on)
-import           Data.List (groupBy, nub, sort, sortBy, sortOn)
-import           Data.List.Extra (groupOn, groupSortBy, groupSortOn)
+import           Data.List (sort)
+import           Data.List.Extra (groupSortOn, nubOrd)
 import           Data.Maybe (fromJust)
 import           Data.Semigroup (Sum(..))
-import           Data.Tuple (swap)
-import           Data.Tuple.Extra (both, first)
-import           Text.Megaparsec (Parsec, anySingle, many, optional, parseMaybe, try, (<|>))
-import           Text.Megaparsec.Char (char, letterChar, space, string)
+import           Data.Tuple.Extra (both)
+import           Text.Megaparsec (Parsec, parseMaybe)
+import           Text.Megaparsec.Char (char, space, string)
 import           Text.Megaparsec.Char.Lexer (decimal, signed)
-import           Universum.VarArg ((...))
+import           Universum ((...))
 import           Util ((<$$>>), (<$$>>>), (<&>>), (<*<), arg2, const2, (&>), (<&))
 
 
@@ -47,7 +46,7 @@ point :: String -> Point
 point = fromJust . parseMaybe pointP
 
 horizontalVariance :: [Point] -> Int
-horizontalVariance = length . nub . sort . fmap (fst . position)
+horizontalVariance = length . nubOrd . sort . fmap (fst . position)
 
 groupByY :: [Point] -> [[Point]]
 groupByY = groupSortOn (snd . position)
