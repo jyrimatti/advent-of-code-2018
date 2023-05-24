@@ -11,7 +11,7 @@ let
       , data-foldapp, edit-distance, extra, generic-lens, keys, lens, lib
       , matrices, megaparsec, parsec, parsec-numbers, parser-combinators
       , profunctors, recursion-schemes, search-algorithms, split, text
-      , time, TypeCompose, universum, vector, cabal-install, haskell-language-server
+      , time, TypeCompose, universum, vector, cabal-install, haskell-language-server, pointfree
       }:
       mkDerivation {
         pname = "advent";
@@ -23,7 +23,7 @@ let
           base composition cond containers data-foldapp edit-distance extra
           generic-lens keys lens matrices megaparsec parsec parsec-numbers
           parser-combinators profunctors recursion-schemes search-algorithms
-          split text time TypeCompose universum vector cabal-install
+          split text time TypeCompose universum vector cabal-install pointfree
         ];
         license = "unknown";
         executableSystemDepends = [ haskell-language-server ];

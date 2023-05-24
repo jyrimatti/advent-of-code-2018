@@ -27,6 +27,9 @@ solution1 = solve1 <$> input
 
 
 pairHeadWithOthers :: [a] -> [(a, a)]
+--pairHeadWithOthers xs = zip (repeat (head xs)) (tail xs) -- pointful
+--pairHeadWithOthers = ap (zip . repeat . head) tail       -- from pointfree.io
+--pairHeadWithOthers = (zip . (repeat . head)) <*> tail    -- from CodeGPT
 pairHeadWithOthers = zip <$> repeat . head <*> tail
 
 pairings :: [String] -> [(String, String)]

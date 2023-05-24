@@ -40,8 +40,8 @@ claim = fromJust . parseMaybe claimP
 range :: Int -- amount
       -> Int -- start
       -> [Int]
---range amount start = take amount [start..]    -- Pointfull.
---range = (. enumFrom) . take                   -- What pointfree.io returns.
+--range amount start = take amount [start..]    -- pointful
+--range = (. enumFrom) . take                   -- from pointfree.io
 --range = flip (dove take) enumFrom             -- Using a Bird.
 --range = goldfinch take enumFrom               -- Or another Bird
 --range = take <&>> id <*< enumFrom             -- With a general "pass each arg through a separate function"
