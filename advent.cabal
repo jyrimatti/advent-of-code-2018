@@ -34,6 +34,7 @@ Executable Main
                , Day23
                , Day24
                , Day25
+               , Blog
   build-depends:
       time,
       base,
