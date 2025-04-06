@@ -1,1 +1,1 @@
-Advent of code 2018 solutions, modified to point-free style
+Moved to https://codeberg.org/jyri-matti/advent-of-code-2018
